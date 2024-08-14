@@ -1,6 +1,6 @@
 .gitmodules
 build/
-.vscode/
+
 # Prerequisites
 *.d
 
