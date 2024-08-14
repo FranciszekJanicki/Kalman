@@ -62,8 +62,10 @@ class Kalman {
 
         inline const mtx::Matrix &getState() const;
         inline double getTime() const;
+        inline bool getIsInitialized() const;
+
         inline void setInputs(const mtx::Matrix &inputs);
-        inline void init();
+
 
     private:
         void predict();     
