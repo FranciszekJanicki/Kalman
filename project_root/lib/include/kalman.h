@@ -8,7 +8,7 @@
 
 
 // unit type
-typedef mtx::Matrix<float> mtx::Matrix;
+using Matrix = mtx::Matrix<float>;
 
 
 enum class MatrixID {
@@ -52,7 +52,6 @@ struct MeasureModel {
 class Kalman {
     public:
         Kalman(const FilterModel &filter, const MeasureModel &measure);
-
         inline Kalman() = default;
         inline Kalman(const Kalman &other) = default;
         inline Kalman(Kalman &&other) = default;
@@ -67,8 +66,9 @@ class Kalman {
         inline void init();
 
     private:
+        void predict();     
         void update();
-        void predict();        
+    
 
         bool isInitialized_ {false};
 
@@ -80,23 +80,23 @@ class Kalman {
         const int states_ {1}; // number of filter outputs
 
         // filter model
-        const int inputs_ {1}; // number of filter inputs
-        const mtx::Matrix A_ {}; // state transition matrix (states_ x inputs_)
-        const mtx::Matrix x_ {}; // state vector (states_ x 1)
-        const mtx::Matrix B_ {}; // input transition matrix (states_ x inputs_)
-        const mtx::Matrix u_ {}; // input vector (inputs_ x 1)
-        const mtx::Matrix P_ {}; // state covariance matrix (states_ x states_)
-        const mtx::Matrix Q_ {}; // input covariance matrix (inputs_ x inputs_)
-        const mtx::Matrix predX_ {}; // predicted state vector (states_ x 1)
+        const int inputs_ {1};                         // number of filter inputs
+        const mtx::Matrix A_ {states_, inputs_};       // state transition matrix (states_ x inputs_)
+        const mtx::Matrix x_ {states_, 1};             // state vector (states_ x 1)
+        const mtx::Matrix B_ {states_, inputs_};       // input transition matrix (states_ x inputs_)
+        const mtx::Matrix u_ {inputs_, 1};             // input vector (inputs_ x 1)
+        const mtx::Matrix P_ {states_, states_};       // state covariance matrix (states_ x states_)
+        const mtx::Matrix Q_ {inputs_, inputs_};       // input covariance matrix (inputs_ x inputs_)
+        const mtx::Matrix predX_ {states_, 1};         // predicted state vector (states_ x 1)
 
         // measurement model
-        const int measurements_ {1}; // number of meauserements performed 
-        mtx::Matrix H_ {}; // measurement transformation matrix (measurements_ x states_)
-        mtx::Matrix z_ {}; // measurement vector (numMeasures x  1)
-        mtx::Matrix R_ {}; // process noise (measurement uncertainty) (measurements_ x measurements_)
-        mtx::Matrix y_ {}; // innovation (measurements_ x 1)
-        mtx::Matrix S_ {}; // residual covariance (measurements_ x measurements_)
-        mtx::Matrix K_ {}; // kalman gain (states_ x measurements_)
+        const int measurements_ {1};                   // number of meauserements performed 
+        mtx::Matrix H_ {measurements_, states_};       // measurement transformation matrix (measurements_ x states_)
+        mtx::Matrix z_ {measurements_, 1};             // measurement vector (measurements_ x  1)
+        mtx::Matrix R_ {measurements_, measurements_}; // process noise (measurement uncertainty) (measurements_ x measurements_)
+        mtx::Matrix y_ {measurements_, 1};             // innovation vector (measurements_ x 1)
+        mtx::Matrix S_ {measurements_, measurements_}; // residual covariance (measurements_ x measurements_)
+        mtx::Matrix K_ {states_, measurements_};       // kalman gain (states_ x measurements_)
 };
 
                     
