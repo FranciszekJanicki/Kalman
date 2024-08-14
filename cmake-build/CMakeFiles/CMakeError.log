@@ -1,0 +1,80 @@
+Performing C++ SOURCE FILE Test COMPILER_SUPPORT_Wshorten64to32 failed with the following output:
+Change Dir: /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-KvPDk5
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_f053d/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_f053d.dir/build.make CMakeFiles/cmTC_f053d.dir/build
+gmake[1]: Entering directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-KvPDk5'
+Building CXX object CMakeFiles/cmTC_f053d.dir/src.cxx.o
+/usr/bin/c++ -DCOMPILER_SUPPORT_Wshorten64to32  -std=c++03 -pedantic -Wall -Wextra -Wundef -Wcast-align -Wchar-subscripts -Wnon-virtual-dtor -Wunused-local-typedefs -Wpointer-arith -Wwrite-strings -Wformat-security -Werror   -Wshorten-64-to-32 -o CMakeFiles/cmTC_f053d.dir/src.cxx.o -c /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-KvPDk5/src.cxx
+c++: error: unrecognized command-line option '-Wshorten-64-to-32'
+gmake[1]: *** [CMakeFiles/cmTC_f053d.dir/build.make:78: CMakeFiles/cmTC_f053d.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-KvPDk5'
+gmake: *** [Makefile:127: cmTC_f053d/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+
+Performing C++ SOURCE FILE Test COMPILER_SUPPORT_wd981 failed with the following output:
+Change Dir: /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-6mW52i
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_e0776/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_e0776.dir/build.make CMakeFiles/cmTC_e0776.dir/build
+gmake[1]: Entering directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-6mW52i'
+Building CXX object CMakeFiles/cmTC_e0776.dir/src.cxx.o
+/usr/bin/c++ -DCOMPILER_SUPPORT_wd981  -std=c++03 -pedantic -Wall -Wextra -Wundef -Wcast-align -Wchar-subscripts -Wnon-virtual-dtor -Wunused-local-typedefs -Wpointer-arith -Wwrite-strings -Wformat-security -Wlogical-op -Wenum-conversion -Wc++11-extensions -Wdouble-promotion -Wshadow -Wno-psabi -Wno-variadic-macros -Wno-long-long -fno-check-new -fno-common -fstrict-aliasing -Werror   -wd981 -o CMakeFiles/cmTC_e0776.dir/src.cxx.o -c /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-6mW52i/src.cxx
+c++: error: unrecognized command-line option '-wd981'
+gmake[1]: *** [CMakeFiles/cmTC_e0776.dir/build.make:78: CMakeFiles/cmTC_e0776.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-6mW52i'
+gmake: *** [Makefile:127: cmTC_e0776/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+
+Performing C++ SOURCE FILE Test COMPILER_SUPPORT_wd2304 failed with the following output:
+Change Dir: /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-h97Bdo
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_e0b2a/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_e0b2a.dir/build.make CMakeFiles/cmTC_e0b2a.dir/build
+gmake[1]: Entering directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-h97Bdo'
+Building CXX object CMakeFiles/cmTC_e0b2a.dir/src.cxx.o
+/usr/bin/c++ -DCOMPILER_SUPPORT_wd2304  -std=c++03 -pedantic -Wall -Wextra -Wundef -Wcast-align -Wchar-subscripts -Wnon-virtual-dtor -Wunused-local-typedefs -Wpointer-arith -Wwrite-strings -Wformat-security -Wlogical-op -Wenum-conversion -Wc++11-extensions -Wdouble-promotion -Wshadow -Wno-psabi -Wno-variadic-macros -Wno-long-long -fno-check-new -fno-common -fstrict-aliasing -Werror   -wd2304 -o CMakeFiles/cmTC_e0b2a.dir/src.cxx.o -c /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-h97Bdo/src.cxx
+c++: error: unrecognized command-line option '-wd2304'
+gmake[1]: *** [CMakeFiles/cmTC_e0b2a.dir/build.make:78: CMakeFiles/cmTC_e0b2a.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-h97Bdo'
+gmake: *** [Makefile:127: cmTC_e0b2a/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+
+Performing C++ SOURCE FILE Test COMPILER_SUPPORT_STRICTANSI failed with the following output:
+Change Dir: /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-sBesJS
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_b5705/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_b5705.dir/build.make CMakeFiles/cmTC_b5705.dir/build
+gmake[1]: Entering directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-sBesJS'
+Building CXX object CMakeFiles/cmTC_b5705.dir/src.cxx.o
+/usr/bin/c++ -DCOMPILER_SUPPORT_STRICTANSI  -std=c++03 -pedantic -Wall -Wextra -Wundef -Wcast-align -Wchar-subscripts -Wnon-virtual-dtor -Wunused-local-typedefs -Wpointer-arith -Wwrite-strings -Wformat-security -Wlogical-op -Wenum-conversion -Wc++11-extensions -Wdouble-promotion -Wshadow -Wno-psabi -Wno-variadic-macros -Wno-long-long -fno-check-new -fno-common -fstrict-aliasing -Werror   -strict-ansi -o CMakeFiles/cmTC_b5705.dir/src.cxx.o -c /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-sBesJS/src.cxx
+c++: error: unrecognized command-line option '-strict-ansi'; did you mean '-fstrict-enums'?
+gmake[1]: *** [CMakeFiles/cmTC_b5705.dir/build.make:78: CMakeFiles/cmTC_b5705.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-sBesJS'
+gmake: *** [Makefile:127: cmTC_b5705/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+
+Performing C++ SOURCE FILE Test COMPILER_SUPPORT_Qunusedarguments failed with the following output:
+Change Dir: /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-KgQqNn
+
+Run Build Command(s):/usr/bin/gmake -f Makefile cmTC_3f09d/fast && /usr/bin/gmake  -f CMakeFiles/cmTC_3f09d.dir/build.make CMakeFiles/cmTC_3f09d.dir/build
+gmake[1]: Entering directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-KgQqNn'
+Building CXX object CMakeFiles/cmTC_3f09d.dir/src.cxx.o
+/usr/bin/c++ -DCOMPILER_SUPPORT_Qunusedarguments  -std=c++03 -pedantic -Wall -Wextra -Wundef -Wcast-align -Wchar-subscripts -Wnon-virtual-dtor -Wunused-local-typedefs -Wpointer-arith -Wwrite-strings -Wformat-security -Wlogical-op -Wenum-conversion -Wc++11-extensions -Wdouble-promotion -Wshadow -Wno-psabi -Wno-variadic-macros -Wno-long-long -fno-check-new -fno-common -fstrict-aliasing -Werror   -Qunused-arguments -o CMakeFiles/cmTC_3f09d.dir/src.cxx.o -c /home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-KgQqNn/src.cxx
+c++: error: unrecognized command-line option '-Qunused-arguments'
+gmake[1]: *** [CMakeFiles/cmTC_3f09d.dir/build.make:78: CMakeFiles/cmTC_3f09d.dir/src.cxx.o] Error 1
+gmake[1]: Leaving directory '/home/franek/Documents/C++/Kalman/cmake-build/CMakeFiles/CMakeScratch/TryCompile-KgQqNn'
+gmake: *** [Makefile:127: cmTC_3f09d/fast] Error 2
+
+
+Source file was:
+int main() { return 0; }
+
