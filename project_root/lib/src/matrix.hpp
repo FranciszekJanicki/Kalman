@@ -143,7 +143,7 @@ namespace mtx {
         #endif
 
         // minor is scalar, can omit later code
-        if (matrixDims == 0) return data[0][0];
+        if (matrixDims == 0) return data;
         
         // result object
         std::vector<std::vector<T>> minor(matrixDims, std::vector<T>(matrixDims, 0));
@@ -208,7 +208,7 @@ namespace mtx {
             catch (const std::runtime_error &error) {LOG(error);}
             #else 
                 minor = getMinor(data, 0, iCol, matrixDims); // std::vector move operator
-                det += sign * data[0][iCol] * determinant(minor, matrixDims - 1);
+                det += sign * data[0][iCol] * getDeterminant(minor, matrixDims - 1);
             #endif
             
             // alternate sign
@@ -278,13 +278,13 @@ namespace mtx {
                 else sign = -1;
 
                 // complement is matrix of determinants of minors with alternating signs!!!
-                complement[iRow][iCol] = (sign) * (determinant(minor, matrixDims - 1));
+                complement[iRow][iCol] = (sign) * (getDeterminant(minor, matrixDims - 1));
                 #endif
             }
         }
         // result object
         // adjoint is transposed of complement matrix
-        return std::vector<std::vector<T>>(getTransposed(complement)); // dont declare if all you need is to return or copy it into collection, instead just use constructor without declaring varaible if it isnt used
+        return std::vector<std::vector<T>>(getTranspose(complement)); // dont declare if all you need is to return or copy it into collection, instead just use constructor without declaring varaible if it isnt used
     }
 
     template <typename T>
@@ -718,10 +718,10 @@ namespace mtx {
         assert(this->cols_ == other.rows_);
 
         #if USE_EXCEPTIONS
-        try {this->data = getProduct(this->data_, other.data_);} // std::vector move operator
+        try {this->data_ = getProduct(this->data_, other.data_);} // std::vector move operator
         catch (const std::runtime_error &error) {LOG(error);}
         #else
-        this->data = getProduct(this->data_, other.data_); // std::vector move operator
+        this->data_ = getProduct(this->data_, other.data_); // std::vector move operator
         #endif
         this->rows_ = this->rows_; 
         this->cols_ = other.cols_;
