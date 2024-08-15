@@ -117,6 +117,8 @@ x += y; called += operator directly on lhs and rhs
 */
 
 void Kalman::predict() {
+    assert(isInitialized_ == true);
+
     // using temp variables to store result of one operation and use it to perform next
     
     /* predict state        */
@@ -136,7 +138,9 @@ void Kalman::predict() {
     P_ += B_ * Q_ * B_;
 }
 
-void Kalman::update() {
+void Kalman::update() {    
+    assert(isInitialized_ == true);
+    
     /* calculate innovation */ 
     // y = z - H*x
     

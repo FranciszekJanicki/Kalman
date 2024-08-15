@@ -7,23 +7,6 @@
 // #include "Eigen/Dense"
 
 
-// unit type
-
-
-enum class MatrixID {
-    kMatrixA,
-    kMatrixB,
-    kMatrixP,
-    kMatrixQ,
-    kVectorX,
-    kVectorU,
-    kMatrixH,
-    kMatrixR,
-    kMatrixS,
-    kMatrixK,
-    kVectorZ,
-    kVectorY
-};
 
 struct FilterModel {
     const size_t states_ {}; // number of filter units
@@ -104,9 +87,9 @@ class Kalman {
         mtx::Matrix<float> tempAP_ {};
         mtx::Matrix<float> tempHx_ {};
         mtx::Matrix<float> tempHP_ {};
-        mtx::Matrix<float>tempH_ {};
-        mtx::Matrix<float>tempPHt_ {};
-        mtx::Matrix<float>tempS_ {};
+        mtx::Matrix<float> tempH_ {};
+        mtx::Matrix<float> tempPHt_ {};
+        mtx::Matrix<float> tempS_ {};
         mtx::Matrix<float> tempKy_ {};
 
 };
