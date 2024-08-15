@@ -9,5 +9,5 @@ target_include_directories(Kalman
 )
 
 ############### EIGEN LIB ################
-target_link_directories(Kalman PRIVATE eigen3)
-target_link_libraries(Kalman PRIVATE eigen3)
+target_link_directories(Kalman PRIVATE eigen)
+target_link_libraries(Kalman PRIVATE eigen)

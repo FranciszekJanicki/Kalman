@@ -6,6 +6,8 @@
 #include <cassert>
 #include <cmath>
 
+#include "config.h"
+
 
 namespace mtx {
 
@@ -72,10 +74,10 @@ namespace mtx {
             std::vector<std::vector<T>> getProduct(const std::vector<std::vector<T>> &left, const std::vector<std::vector<T>> &right) const;
 
             // DATA MEMBERS
-            size_t rows_; // first dim
-            size_t cols_; // second dim
-            T det_;
-            std::vector<std::vector<T>> data_; // vector of vectors
+            size_t rows_ {}; // first dim
+            size_t cols_ {}; // second dim
+            T det_ {};
+            std::vector<std::vector<T>> data_ {}; // vector of vectors
     };
 
 
