@@ -53,31 +53,32 @@ class Kalman {
         void predict();     
         void update();
     
-
+        // dont make non-static members const, as this would break move operations!
+        
         bool isInitialized_ {false};
 
         float stepTime_ {1.0f};
         float currentTime_ {0.0f};
-        const float startTime_ {0.0f};
+        float startTime_ {0.0f};
 
         // common model
-        const size_t states_ {1};                                   // number of filter outputs
+        size_t states_ {1};                                   // number of filter outputs
 
         // filter model
-        const size_t inputs_ {1};                                   // number of filter inputs
-        const mtx::Matrix<float> A_ {states_, inputs_};             // state transition matrix (states_ x inputs_)
-        const mtx::Matrix<float> B_ {states_, inputs_};             // input transition matrix (states_ x inputs_)
+         size_t inputs_ {1};                                   // number of filter inputs
+         mtx::Matrix<float> A_ {states_, inputs_};             // state transition matrix (states_ x inputs_)
+         mtx::Matrix<float> B_ {states_, inputs_};             // input transition matrix (states_ x inputs_)
         mtx::Matrix<float> u_ {inputs_, 1};                         // input vector (inputs_ x 1)      
         mtx::Matrix<float> P_ {states_, states_};             // state covariance matrix (states_ x states_)
-        const mtx::Matrix<float> Q_ {inputs_, inputs_};             // input covariance matrix (inputs_ x inputs_)
+         mtx::Matrix<float> Q_ {inputs_, inputs_};             // input covariance matrix (inputs_ x inputs_)
         mtx::Matrix<float> x_ {states_, 1};                         // state vector (states_ x 1)
         mtx::Matrix<float> xP_ {states_, 1};                        // predicted state vector (states_ x 1)
         
         // measurement model
-        const size_t measurements_ {1};                             // number of measerements performed 
-        const mtx::Matrix<float> H_ {measurements_, states_};       // measurement transformation matrix (measurements_ x states_)
+        size_t measurements_ {1};                             // number of measerements performed 
+         mtx::Matrix<float> H_ {measurements_, states_};       // measurement transformation matrix (measurements_ x states_)
         mtx::Matrix<float> z_ {measurements_, 1};             // measurement vector (measurements_ x  1)
-        const mtx::Matrix<float> R_ {measurements_, measurements_}; // process noise (measurement uncertainty) (measurements_ x measurements_)
+         mtx::Matrix<float> R_ {measurements_, measurements_}; // process noise (measurement uncertainty) (measurements_ x measurements_)
         mtx::Matrix<float> y_ {measurements_, 1};             // innovation vector (measurements_ x 1)
         mtx::Matrix<float> S_ {measurements_, measurements_}; // residual covariance (measurements_ x measurements_)
         mtx::Matrix<float> K_ {states_, measurements_};             // kalman gain (states_ x measurements_)
