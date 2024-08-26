@@ -13,9 +13,9 @@ namespace mtx {
     template <typename T>
     class Matrix {
     public:
-        explicit Matrix(size_t rows = 0, size_t cols = 0, const T& value = 0); // 0
-        Matrix(std::vector<std::vector<T>>& otherData);                        // 1
-        Matrix(const std::vector<T>& diag);                                    // 2
+        explicit Matrix(size_t rows = 0, size_t cols = 0, T value = 0); // 0
+        Matrix(std::vector<std::vector<T>>& otherData);                 // 1
+        Matrix(const std::vector<T>& diag);                             // 2
         Matrix(const Matrix<T>&) = default;
         Matrix(Matrix<T>&&)      = default;
         Matrix<T>& operator=(const Matrix<T>&);
@@ -73,7 +73,7 @@ namespace mtx {
     };
 
     template <typename T>
-    Matrix<T>::Matrix(size_t rows, size_t cols, const T& value) :
+    Matrix<T>::Matrix(size_t rows, size_t cols, T value) :
         rows_(rows), cols_(cols),
         data_(rows_, std::vector<T>(cols_, value)) { // this cstr takes both rvalue and lvalue, no need for std::forward of second argument
         // assert that either both dimensions were specified, or neither
