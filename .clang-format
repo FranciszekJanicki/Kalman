@@ -1,0 +1,59 @@
+---
+# Basic Settings
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 140
+
+# Indentation and Formatting Rules
+ConstructorInitializerIndentWidth: 4
+AccessModifierOffset: -4
+IndentAccessModifiers: false  # Prevent unnecessary indentation for access specifiers
+IndentCaseLabels: true
+NamespaceIndentation: All
+
+# Alignment Settings
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Left
+AlignOperands: true
+AlignTrailingComments: true
+
+# Breaking and Wrapping Rules
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowShortBlocksOnASingleLine: false
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+BinPackArguments: true
+BinPackParameters: true
+
+# Spaces and Padding Rules
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+
+# Other Formatting Options
+AlignConsecutiveDeclarations: true
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+DisableFormat: false
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 1
+PointerAlignment: Left
+BreakBeforeBraces: Attach  # Attach braces directly to avoid excessive vertical space in structures
+IndentWrappedFunctionNames: false
+IndentFunctionDeclarationAfterType: true
