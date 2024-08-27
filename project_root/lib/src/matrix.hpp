@@ -54,7 +54,6 @@ namespace mtx {
         inline DataType              operator()(size_t rowIdx, size_t colIdx) const;
 
     private:
-        // PRIVATE FUNCTION MEMBERS
         DataType                           getDeterminant(const std::vector<std::vector<DataType>>& data, size_t matrixDims) const;
         std::vector<std::vector<DataType>> getMinor(const std::vector<std::vector<DataType>>& data, size_t rowIdx, size_t colIdx,
                                                     size_t matrixDims) const;
@@ -67,7 +66,6 @@ namespace mtx {
         std::vector<std::vector<DataType>> getProduct(const std::vector<std::vector<DataType>>& left,
                                                       const std::vector<std::vector<DataType>>& right) const;
 
-        // DATA MEMBERS
         size_t                             rows_{}; // first dim
         size_t                             cols_{}; // second dim
         DataType                           det_{};
@@ -79,14 +77,6 @@ namespace mtx {
         rows_(rows), cols_(cols), data_(rows_, std::vector<DataType>(cols_, value)) {
         // assert that either both dimensions were specified, or neither
         assert((rows == 0 && cols == 0) || (rows != 0 && cols != 0));
-
-        // for (int iRow = 0; iRow < rows_; ++iRow) {
-        //     data_.emplace_back(std::vector<DataType>); // emplace_back taking rvalue
-        //     for (int iCol = 0; iCol < cols_; ++iCol) {
-        //         // data_[iRow].emplace_back(value);
-        //         data_.end()->emplace_back(value); // emplace_back taking rvalue
-        //     }
-        // }
     }
 
     template <typename DataType>
@@ -101,17 +91,11 @@ namespace mtx {
             }
         }
     }
-    // template values specified during compile time (object declaration),
-    // can use move constructor during runtime, to initialize allocataed data_ memory
-    template <typename DataType> // (othetData is passed by rvalue ref, so its move cstr)
+
+    template <typename DataType>
     Matrix<DataType>::Matrix(std::vector<std::vector<DataType>> otherData) :
         data_(std::move(otherData)), rows_(otherData.size()), cols_(otherData[0].size()) {
     }
-
-    // if you dont need a custom destructor, then don't, as creating your own destructors (aswell as copy constructors) can disable the
-    // compilers ability to optimize assembly instructions using move operations template <typename DataType> Matrix<DataType>::~Matrix() {
-    //     // compiler will use default (most optimized) self created destructor, std::vector will take care of its memory on the heap
-    // }
 
     template <typename DataType>
     std::vector<std::vector<DataType>> Matrix<DataType>::getMinor(const std::vector<std::vector<DataType>>& data, size_t rowIdx,
@@ -295,9 +279,7 @@ namespace mtx {
         }
         // result object
         // adjoint is transposed of complement matrix
-        return std::vector<std::vector<DataType>>(
-            std::move(getTranspose(complement))); // dont declare if all you need is to return or copy it into collection, instead just use
-                                                  // constructor without declaring varaible if it isnt used
+        return std::vector<std::vector<DataType>>(std::move(getTranspose(complement)));
     }
 
     template <typename DataType>
@@ -496,7 +478,7 @@ namespace mtx {
 
     template <typename DataType>
     std::vector<DataType> Matrix<DataType>::getEndRow() const {
-        return *data_.back(); // .back() - points to last element, .end()- points to one addres past last element (null)
+        return *data_.back();
     }
 
     template <typename DataType>
@@ -508,8 +490,7 @@ namespace mtx {
     std::vector<DataType> Matrix<DataType>::getEndColumn() const {
         std::vector<DataType> ret(rows_, 0);
         for (int iRow = 0; iRow < rows_; ++iRow) {
-            ret.emplace_back(
-                *data_[iRow].back()); // .back() - points to last element, .end()- points to one addres past last element (null)
+            ret.emplace_back(*data_[iRow].back());
         }
         return ret;
     }
@@ -819,7 +800,6 @@ namespace mtx {
         if (data_ == other.data_)
             return *this;
 
-        // move operator of data_ (std::vector) (stealing this memmory from other!)
         data_ = std::move(other.data_);
         // no move operator for trivial
         cols_ = other.cols_;
