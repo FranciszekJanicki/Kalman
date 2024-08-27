@@ -31,7 +31,7 @@ struct MeasureModel {
 
 class Kalman {
 public:
-    Kalman(const FilterModel& filter, const MeasureModel& measure);
+    Kalman(FilterModel& filter, MeasureModel& measure);
     Kalman()                         = default;
     Kalman(const Kalman&)            = default;
     Kalman(Kalman&&)                 = default;
