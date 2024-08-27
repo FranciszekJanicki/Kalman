@@ -14,11 +14,12 @@ namespace mtx {
     class Matrix {
     public:
         explicit Matrix(size_t rows = 0, size_t cols = 0, DataType value = 0); // 0
-        Matrix(std::vector<std::vector<DataType>> otherData);                  // 1
-        Matrix(const std::vector<DataType>& diag);                             // 2
+        explicit Matrix(std::vector<std::vector<DataType>> otherData);         // 1
+        explicit Matrix(const std::vector<DataType>& diag);                    // 2
+
         Matrix(const Matrix<DataType>&) = default;
         Matrix(Matrix<DataType>&&)      = default;
-        Matrix<DataType>& operator=(const Matrix<DataType>&);
+        Matrix<DataType>& operator=(const Matrix<DataType>&) noexcept;
         Matrix<DataType>& operator=(Matrix<DataType>&&) noexcept;
         ~Matrix() = default;
 
@@ -800,7 +801,7 @@ namespace mtx {
 
     // copy operator (return reference to this (lhs))
     template <typename DataType>
-    inline Matrix<DataType>& Matrix<DataType>::operator=(const Matrix<DataType>& other) {
+    inline Matrix<DataType>& Matrix<DataType>::operator=(const Matrix<DataType>& other) noexcept {
         // same container inside objects, no need to move entire object
         if (data_ == other.data_)
             return *this;
@@ -811,22 +812,12 @@ namespace mtx {
         return *this;
     }
 
-    // move operator (return reference to this (lhs)), noexcept since move cstrs/operators should not throw
+    // move operator (return reference to this (lhs))
     template <typename DataType>
     inline Matrix<DataType>& Matrix<DataType>::operator=(Matrix<DataType>&& other) noexcept {
         // same container inside objects, no need to move entire object
         if (data_ == other.data_)
             return *this;
-
-        // NOTICE how its non const reference, because the object we are moving from is
-        // actually the object we are "stealing" from, so it will be left "deinitialized" and shouldnt
-        // be used after.  If it had any pointers, we would explicitly need to define our own copy constructors,
-        // because default one would just shallow copy them (copy just the pointer), which would result in two copies of pointer to same
-        // memory So the copying should copy the memory rather than pointer, and moving should "Steal" the pointer and set the pointer to
-        // null in object stolen from. But if you use smart pointers, you dont need to worry about this, as unique_ptr would be simply moved
-        // (as there cannot be another copy), and shared_ptr would be copied, as they are designed to control handling many copies of the
-        // same ptr (only the destructor of the last shared_ptr will free the memory, they are implemented use static members to count how
-        // many resource users there are)
 
         // move operator of data_ (std::vector) (stealing this memmory from other!)
         data_ = std::move(other.data_);

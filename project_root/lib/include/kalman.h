@@ -32,7 +32,7 @@ struct MeasureModel {
 class Kalman {
 public:
     Kalman(FilterModel& filter, MeasureModel& measure);
-    Kalman()                         = default;
+    Kalman(FilterModel filter, MeasureModel measure);
     Kalman(const Kalman&)            = default;
     Kalman(Kalman&&)                 = default;
     Kalman& operator=(const Kalman&) = default;
