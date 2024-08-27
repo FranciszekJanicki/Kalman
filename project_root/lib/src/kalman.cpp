@@ -39,7 +39,10 @@ void Kalman::setInputs(const mtx::Matrix<float>& inputs) {
 // using std::move to explicitly cast to rvalue and force move assingment operator, as even though operators (like functions) return
 // temporaries, which are rvalues, you need explicit cast to perform move!
 void Kalman::predict() {
-    assert(isInitialized_ == true);
+    if (!isInitialized_) {
+        LOG("Filter unitialized!");
+        return;
+    }
 
     // using temp variables to store result of one operation and use it to perform next
 
@@ -61,7 +64,10 @@ void Kalman::predict() {
 }
 
 void Kalman::update() {
-    assert(isInitialized_ == true);
+    if (!isInitialized_) {
+        LOG("Filter unitialized!");
+        return;
+    }
 
     /* calculate innovation */
     // y = z - H*x
