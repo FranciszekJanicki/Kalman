@@ -715,7 +715,8 @@ namespace mtx {
 
         if (auto expected{std::move(getProduct(data_, getInverse(other.data_)))}; expected.has_value()) {
             Matrix<DataType> result{std::move(expected.value())};
-            result.resize(rows_, other.cols_);
+            result.rows_ = rows_;
+            result.cols_ = other.cols_;
             return result;
         } else {
             LOG(expected.error());
@@ -731,40 +732,35 @@ namespace mtx {
 
         // division is multiplication by inverse
         if (auto expected{std::move(getProduct(data_, getInverse(other.data_)))}; expected.has_value()) {
-            Matrix<DataType> result{std::move(expected.value())};
-            result.resize(rows_, other.cols_);
-            return result;
+            *this = std::move(expected.value());
+            cols_ = other.cols_;
+            return *this;
         } else {
             LOG(expected.error());
             std::abort();
         }
-
-        this->resize(rows_, other.cols_);
-        return *this;
     }
 
     // copy operator (return reference to this (lhs))
     template <typename DataType>
     inline Matrix<DataType>& Matrix<DataType>::operator=(const Matrix<DataType>& other) noexcept {
-        // same container inside objects, no need to move entire object
-        if (data_ == other.data_)
+        if (*this == other)
             return *this;
 
-        data_ = other.data_;
-        cols_ = other.cols_;
-        rows_ = other.rows_;
+        this->data_ = other.data_;
+        cols_       = other.cols_;
+        rows_       = other.rows_;
         return *this;
     }
 
     // move operator (return reference to this (lhs))
     template <typename DataType>
     inline Matrix<DataType>& Matrix<DataType>::operator=(Matrix<DataType>&& other) noexcept {
-        // same container inside objects, no need to move entire object
-        if (data_ == other.data_)
+        if (*this == other)
             return *this;
 
         data_ = std::move(other.data_);
-        // no move operator for trivial
+        // no move operator for PODs
         cols_ = other.cols_;
         rows_ = other.rows_;
         return *this;
