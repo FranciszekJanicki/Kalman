@@ -8,6 +8,8 @@ target_include_directories(Kalman
         PRIVATE "src"
 )
 
+set(CMAKE_CXX_STANDARD 23)
+
 ############### EIGEN LIB ################
 target_link_directories(Kalman PRIVATE eigen)
 target_link_libraries(Kalman PRIVATE eigen)

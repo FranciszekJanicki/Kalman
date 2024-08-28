@@ -1,9 +1,8 @@
-#define USE_EXCEPTIONS 0
+#define ENV_DEBUG
 
-#if USE_EXCEPTIONS
-#include <cstdio>
-#define LOG(error) (printf("%s\n", error))
-#else 
-#define LOG(error)
+#ifdef ENV_DEBUG
+#include <iostream>
+#define LOG(error) (std::cerr << error \n;)
+#else
+#define LOG(info) (std::cout << info \n;)
 #endif
-

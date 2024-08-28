@@ -28,7 +28,7 @@ AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakBeforeMultilineStrings: false
-AlwaysBreakTemplateDeclarations: Yes
+AlwaysBreakTemplateDeclarations: No
 BreakBeforeBinaryOperators: None
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializers: AfterColon
