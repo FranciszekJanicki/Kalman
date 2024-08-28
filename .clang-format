@@ -3,7 +3,7 @@
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
-ColumnLimit: 140
+ColumnLimit: 120
 
 # Indentation and Formatting Rules
 ConstructorInitializerIndentWidth: 4
