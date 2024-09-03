@@ -43,7 +43,7 @@ namespace mtx {
     public:
         explicit Matrix(size_t rows = 0, size_t cols = 0, DataType value = 0) noexcept; // 0
         explicit Matrix(matrix<DataType>& otherData) noexcept;                          // 1
-        explicit Matrix(matrix<DataType> otherData) noexcept;                           // 2
+        explicit Matrix(matrix<DataType>&& otherData) noexcept;                         // 2
         explicit Matrix(const vector<DataType>& diag) noexcept;                         // 3
 
         Matrix(const Matrix<DataType>&) noexcept                      = default;
@@ -123,7 +123,7 @@ namespace mtx {
     }
 
     template <typename DataType>
-    Matrix<DataType>::Matrix(matrix<DataType> otherData) noexcept :
+    Matrix<DataType>::Matrix(matrix<DataType>&& otherData) noexcept :
         rows_{otherData.size()}, cols_{otherData[0].size()}, data_{std::move(otherData)} {
     }
 
@@ -210,13 +210,6 @@ namespace mtx {
             // cofactor of data[0][col]
 
             // moving temporary prevents copy elision, which is even better
-            // if (auto expectedMinor{std::move(getMinor(data, 0, col, matrixDims))}; expectedMinor.has_value())
-            // noexcept {
-            //     minor = std::move(expectedMinor.value());
-            // } else {
-            //     LOG(expectedMinor.error());
-            //     std::abort();
-            // }
             if (auto expectedMinor{getMinor(data, 0, col, matrixDims)}; expectedMinor.has_value()) {
                 minor = expectedMinor.value();
             } else {
@@ -286,14 +279,6 @@ namespace mtx {
                 // get cofactor of data[row][col]
 
                 // moving temporary prevents copy elision, which is even better
-                // if (auto expectedMinor{std::move(getMinor(data, row, col, matrixDims))};
-                // expectedMinor.has_value()) {
-                //     minor = std::move(expectedMinor.value());
-                // } else {
-                //     LOG(expectedMinor.error());
-                //     std::abort();
-                // }
-
                 if (auto expectedMinor{getMinor(data, row, col, matrixDims)}; expectedMinor.has_value()) {
                     minor = expectedMinor.value();
                 } else {
@@ -343,12 +328,6 @@ namespace mtx {
 
         DataType det{};
         // moving temporary prevents copy elision, which is even better
-        // if (auto expectedDet{std::move(getDeterminant(data, matrixDims))}; expectedDet.has_value()) {
-        //     det = std::move(expectedDet.value());
-        // } else {
-        //     LOG(expectedDet.error());
-        //     std::abort();
-        // }
         if (auto expectedDet{getDeterminant(data, matrixDims)}; expectedDet.has_value()) {
             det = expectedDet.value();
         } else {

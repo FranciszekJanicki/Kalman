@@ -16,7 +16,7 @@ Kalman::Kalman(FilterModel& filter, MeasureModel& measure) :
     isInitialized_ = true;
 }
 
-Kalman::Kalman(FilterModel filter, MeasureModel measure) :
+Kalman::Kalman(FilterModel&& filter, MeasureModel&& measure) :
     A_{std::move(filter.A_)}, B_{std::move(filter.B_)}, P_{std::move(filter.P_)}, Q_{std::move(filter.Q_)},
     x_{std::move(filter.x_)}, u_{std::move(filter.u_)}, H_{std::move(measure.H_)}, R_{std::move(measure.R_)},
     S_{std::move(measure.S_)}, K_{std::move(measure.K_)}, z_{std::move(measure.z_)}, y_{std::move(measure.z_)},
