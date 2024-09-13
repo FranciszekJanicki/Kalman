@@ -1,0 +1,4 @@
+[submodule "/home/franek/Documents/C++/Kalman/project_root/third_party/eigen"]
+	path = /home/franek/Documents/C++/Kalman/project_root/third_party/eigen
+	url = https://gitlab.com/libeigen/eigen
+	branch = 3.4
