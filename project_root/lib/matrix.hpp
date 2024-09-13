@@ -5,7 +5,7 @@
 #include <cmath>
 #include <expected>
 #include <iostream>
-#include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -14,11 +14,22 @@
 // matrix data, as well as mtx::Matrix<T> does not differentiate vectors from matrixes (vector is just Nx1 or 1xN
 // matrix)
 
+// std::in_place misused here, as its mostly gonna be move or copy constructions anyway, std::in_place is to be used
+// like emplace, passing variadic params that will be forwarded to constructor of object emplaced in place, passing
+// lvalue or rvalue of object of same type just makes it copy/move constructor anyway in case of passing an lvlaue or
+// rvalue of existing object to container you dont need a constructor with std::in_place flag, as cstrs without that
+// flag take lvalue ref or rvalue ref to contained type, just like push_back when you dont have an object, you shouldnt
+// create one to simply copy or move it to container, you should use factory functions or cstrs with std::in_place or
+// emplace functions and pass args that the object constructed in place will be constructed with, so theres really no
+// sense in making a new object (like constructing argument of contained type in place, which can look deceiving, but
+// just like with non-aggregates- it will be referenced and moved from, not what you wanted if you wanted in-place
+// construction!)
+
 namespace mtx {
 
     enum class MatrixError { WrongDims, Singularity };
 
-    inline static std::string_view matrixErrorToString(MatrixError error) noexcept {
+    static constexpr std::string_view matrixErrorToString(MatrixError error) noexcept {
         switch (error) {
             case MatrixError::WrongDims:
                 return std::string_view{"Wrong dims"};
@@ -29,7 +40,7 @@ namespace mtx {
         }
     }
 
-    inline static void LOG(MatrixError error) noexcept {
+    static constexpr void LOG(MatrixError error) noexcept {
         std::cerr << matrixErrorToString(error);
     }
 
@@ -41,10 +52,10 @@ namespace mtx {
     template <typename DataType>
     class Matrix {
     public:
-        explicit Matrix(size_t rows = 0, size_t cols = 0, DataType value = 0) noexcept; // 0
-        explicit Matrix(matrix<DataType>& otherData) noexcept;                          // 1
-        explicit Matrix(matrix<DataType>&& otherData) noexcept;                         // 2
-        explicit Matrix(const vector<DataType>& diag) noexcept;                         // 3
+        explicit Matrix(std::size_t rows = 0, std::size_t cols = 0, DataType value = 0) noexcept; // 0
+        explicit Matrix(matrix<DataType>& otherData) noexcept;                                    // 1
+        explicit Matrix(matrix<DataType>&& otherData) noexcept;                                   // 2
+        explicit Matrix(const vector<DataType>& diag) noexcept;                                   // 3
 
         Matrix(const Matrix<DataType>&) noexcept                      = default;
         Matrix(Matrix<DataType>&&) noexcept                           = default;
@@ -52,20 +63,21 @@ namespace mtx {
         Matrix<DataType>& operator=(Matrix<DataType>&&) noexcept      = default;
         ~Matrix() noexcept                                            = default;
 
-        void                    transpose() noexcept;
-        void                    invert() noexcept;
-        inline void             appendRow(size_t rowIdx, const vector<DataType>& row) noexcept;
-        inline void             appendColumn(size_t colIdx, const vector<DataType>& column) noexcept;
-        inline void             deleteRow(size_t rowIdx) noexcept;
-        inline void             deleteColumn(size_t colIdx) noexcept;
-        inline void             resize(size_t newRows, size_t newCols) noexcept;
-        inline size_t           getRows() const noexcept;
-        inline size_t           getCols() const noexcept;
-        inline vector<DataType> getEndRow() const noexcept;
-        inline vector<DataType> getBeginRow() const noexcept;
-        inline vector<DataType> getEndColumn() const noexcept;
-        inline vector<DataType> getBeginColumn() const noexcept;
-        inline vector<DataType> getDiag() const noexcept;
+        void transpose() noexcept;
+        void invert() noexcept;
+        void appendRow(std::size_t rowIdx, const vector<DataType>& row) noexcept;
+        void appendColumn(std::size_t colIdx, const vector<DataType>& column) noexcept;
+        void deleteRow(std::size_t rowIdx) noexcept;
+        void deleteColumn(std::size_t colIdx) noexcept;
+        void resize(std::size_t newRows, std::size_t newCols) noexcept;
+
+        [[nodiscard]] inline std::size_t      getRows() const noexcept;
+        [[nodiscard]] inline std::size_t      getCols() const noexcept;
+        [[nodiscard]] inline vector<DataType> getEndRow() const noexcept;
+        [[nodiscard]] inline vector<DataType> getBeginRow() const noexcept;
+        [[nodiscard]] inline vector<DataType> getEndColumn() const noexcept;
+        [[nodiscard]] inline vector<DataType> getBeginColumn() const noexcept;
+        [[nodiscard]] inline vector<DataType> getDiag() const noexcept;
 
         inline Matrix<DataType>  operator*(const DataType& factor) const noexcept;
         inline Matrix<DataType>  operator/(const DataType& factor) const noexcept;
@@ -79,31 +91,36 @@ namespace mtx {
         inline Matrix<DataType>& operator-=(const Matrix<DataType>& other) noexcept;
         inline Matrix<DataType>& operator*=(const Matrix<DataType>& other) noexcept;
         inline Matrix<DataType>& operator/=(const Matrix<DataType>& other) noexcept;
-        inline vector<DataType>  operator()(size_t rowIdx) const noexcept;
-        inline DataType          operator()(size_t rowIdx, size_t colIdx) const noexcept;
+        inline vector<DataType>  operator()(std::size_t rowIdx) const noexcept;
+        inline DataType          operator()(std::size_t rowIdx, std::size_t colIdx) const noexcept;
 
     private:
-        std::expected<DataType, MatrixError>         getDeterminant(const matrix<DataType>& data,
-                                                                    size_t                  matrixDims) const noexcept;
-        std::expected<matrix<DataType>, MatrixError> getMinor(const matrix<DataType>& data, size_t rowIdx,
-                                                              size_t colIdx, size_t matrixDims) const noexcept;
-        matrix<DataType>                             getTranspose(const matrix<DataType>& data) const noexcept;
-        std::expected<matrix<DataType>, MatrixError> getAdjoint(const matrix<DataType>& data) const noexcept;
-        std::expected<matrix<DataType>, MatrixError> getInverse(const matrix<DataType>& data) const noexcept;
-        std::expected<matrix<DataType>, MatrixError> getLowerTriangular(const matrix<DataType>& data) const noexcept;
-        std::expected<matrix<DataType>, MatrixError> getUpperTriangular(const matrix<DataType>& data) const noexcept;
-        matrix<DataType> getScale(const matrix<DataType>& data, DataType factor) const noexcept;
-        std::expected<matrix<DataType>, MatrixError> getProduct(const matrix<DataType>& left,
-                                                                const matrix<DataType>& right) const noexcept;
+        [[nodiscard]] std::expected<DataType, MatrixError>         getDeterminant(const matrix<DataType>& data,
+                                                                                  std::size_t matrixDims) const noexcept;
+        [[nodiscard]] std::expected<matrix<DataType>, MatrixError> getMinor(const matrix<DataType>& data,
+                                                                            std::size_t rowIdx, std::size_t colIdx,
+                                                                            std::size_t matrixDims) const noexcept;
+        [[nodiscard]] matrix<DataType> getTranspose(const matrix<DataType>& data) const noexcept;
+        [[nodiscard]] std::expected<matrix<DataType>, MatrixError>
+        getAdjoint(const matrix<DataType>& data) const noexcept;
+        [[nodiscard]] std::expected<matrix<DataType>, MatrixError>
+        getInverse(const matrix<DataType>& data) const noexcept;
+        [[nodiscard]] std::expected<matrix<DataType>, MatrixError>
+        getLowerTriangular(const matrix<DataType>& data) const noexcept;
+        [[nodiscard]] std::expected<matrix<DataType>, MatrixError>
+                                       getUpperTriangular(const matrix<DataType>& data) const noexcept;
+        [[nodiscard]] matrix<DataType> getScale(const matrix<DataType>& data, DataType factor) const noexcept;
+        [[nodiscard]] std::expected<matrix<DataType>, MatrixError>
+        getProduct(const matrix<DataType>& left, const matrix<DataType>& right) const noexcept;
 
-        size_t           rows_{}; // first dim
-        size_t           cols_{}; // second dim
+        std::size_t      rows_{}; // first dim
+        std::size_t      cols_{}; // second dim
         DataType         det_{};
         matrix<DataType> data_{}; // vector of vectors
     };
 
     template <typename DataType>
-    Matrix<DataType>::Matrix(size_t rows, size_t cols, DataType value) noexcept :
+    Matrix<DataType>::Matrix(std::size_t rows, std::size_t cols, DataType value) noexcept :
         rows_{rows}, cols_{cols}, data_(rows_, vector<DataType>(cols_, value)) {
         // assert that either both dimensions were specified, or neither
         assert((rows == 0 && cols == 0) || (rows != 0 && cols != 0));
@@ -113,8 +130,8 @@ namespace mtx {
     Matrix<DataType>::Matrix(const vector<DataType>& diag) noexcept :
         rows_{diag.size()}, cols_{rows_}, data_(rows_, vector<DataType>(cols_, 0)) {
         // create diagonal matrix with zeros beside diagonale
-        for (size_t row{0}; row < rows_; ++row) {
-            for (size_t col{0}; col < cols_; ++col) {
+        for (std::size_t row{0}; row < rows_; ++row) {
+            for (std::size_t col{0}; col < cols_; ++col) {
                 if (row == col) {
                     data_[row][col] = diag[row];
                 }
@@ -129,35 +146,35 @@ namespace mtx {
 
     template <typename DataType>
     Matrix<DataType>::Matrix(matrix<DataType>& otherData) noexcept :
-        rows_{otherData.size()}, cols_{otherData[0].size()}, data_{std::move(otherData)} {
+        rows_{otherData.size()}, cols_{otherData[0].size()}, data_{otherData} {
     }
 
     template <typename DataType>
-    std::expected<matrix<DataType>, MatrixError> Matrix<DataType>::getMinor(const matrix<DataType>& data, size_t rowIdx,
-                                                                            size_t colIdx,
-                                                                            size_t matrixDims) const noexcept {
-        size_t rows{data.size()};
-        size_t cols{data[0].size()};
+    std::expected<matrix<DataType>, MatrixError> Matrix<DataType>::getMinor(const matrix<DataType>& data,
+                                                                            std::size_t rowIdx, std::size_t colIdx,
+                                                                            std::size_t matrixDims) const noexcept {
+        const std::size_t rows{data.size()};
+        const std::size_t cols{data[0].size()};
         // assert correct dimensions
         assert(rows == cols);
         if (rows != cols) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
         // assert cofactor isnt calculated for minor bigger than data
         assert(matrixDims < rowIdx && matrixDims < colIdx);
         if (matrixDims >= rowIdx || matrixDims >= colIdx) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
         // minor is scalar, can omit later code
         if (matrixDims == 0) {
-            return std::expected<matrix<DataType>, MatrixError>{std::in_place, data};
+            return std::expected<matrix<DataType>, MatrixError>{data};
         }
 
         matrix<DataType> minor(matrixDims, vector<DataType>(matrixDims, 0));
-        size_t           cofRow{0};
-        size_t           cofCol{0};
-        for (size_t dataRow{0}; dataRow < matrixDims; ++dataRow) {
-            for (size_t dataCol{0}; dataCol < matrixDims; ++dataCol) {
+        std::size_t      cofRow{0};
+        std::size_t      cofCol{0};
+        for (std::size_t dataRow{0}; dataRow < matrixDims; ++dataRow) {
+            for (std::size_t dataCol{0}; dataCol < matrixDims; ++dataCol) {
                 // copying into cofactor matrix only those element which are not in given row and column
                 if (dataRow != rowIdx && dataCol != colIdx) {
                     minor[cofRow][cofCol++] = data[dataRow][dataCol];
@@ -170,29 +187,29 @@ namespace mtx {
                 }
             }
         }
-        return std::expected<matrix<DataType>, MatrixError>{std::in_place, minor};
+        return std::expected<matrix<DataType>, MatrixError>{std::move(minor)};
     }
 
     template <typename DataType>
     std::expected<DataType, MatrixError> Matrix<DataType>::getDeterminant(const matrix<DataType>& data,
-                                                                          size_t matrixDims) const noexcept {
-        size_t rows{data.size()};
-        size_t cols{data[0].size()};
+                                                                          std::size_t matrixDims) const noexcept {
+        const std::size_t rows{data.size()};
+        const std::size_t cols{data[0].size()};
         // assert correct dimensions
         assert(rows == cols);
         if (rows != cols) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
 
         // assert minor isnt bigger than data
         assert(rows > matrixDims && cols > matrixDims);
         if (rows <= matrixDims || cols <= matrixDims) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
 
         // data is scalar, can omit later code
         if (matrixDims == 1) {
-            return std::expected<DataType, MatrixError>{std::in_place, data[0][0]};
+            return std::expected<DataType, MatrixError>{data[0][0]};
         }
         // data is 2x2 matrix, can omit later code
         if (matrixDims == 2) {
@@ -201,12 +218,12 @@ namespace mtx {
         }
 
         // result object
-        DataType det{static_cast<DataType>(0)};
+        DataType det{};
 
         // sign multiplier
         DataType         sign{static_cast<DataType>(1)};
         matrix<DataType> minor(matrixDims, vector<DataType>(cols, matrixDims));
-        for (size_t col{0}; col < matrixDims; ++col) {
+        for (std::size_t col{0}; col < matrixDims; ++col) {
             // cofactor of data[0][col]
 
             // moving temporary prevents copy elision, which is even better
@@ -228,13 +245,13 @@ namespace mtx {
             sign *= static_cast<DataType>(-1);
         }
 
-        return std::expected<DataType, MatrixError>{std::in_place, det};
+        return std::expected<DataType, MatrixError>{det};
     }
 
     template <typename DataType>
     matrix<DataType> Matrix<DataType>::getTranspose(const matrix<DataType>& data) const noexcept {
-        size_t newRows{data.size()};
-        size_t newCols{data[0].size()};
+        const std::size_t newRows{data.size()};
+        const std::size_t newCols{data[0].size()};
 
         // data is scalar, can omit later code
         if ((newRows == newCols) == 1)
@@ -243,8 +260,8 @@ namespace mtx {
         // result object
         matrix<DataType> transpose(newRows, vector<DataType>(newCols, 0));
 
-        for (size_t row{0}; row < newRows; ++row) {
-            for (size_t col{0}; col < newCols; ++col) {
+        for (std::size_t row{0}; row < newRows; ++row) {
+            for (std::size_t col{0}; col < newCols; ++col) {
                 transpose[row][col] = data[col][row];
             }
         }
@@ -254,19 +271,19 @@ namespace mtx {
     template <typename DataType>
     std::expected<matrix<DataType>, MatrixError>
     Matrix<DataType>::getAdjoint(const matrix<DataType>& data) const noexcept {
-        size_t rows{data.size()};
-        size_t cols{data[0].size()};
+        const std::size_t rows{data.size()};
+        const std::size_t cols{data[0].size()};
         // assert correct dimensions
         assert(rows == cols);
         if (rows != cols) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
 
         // matrix square
-        size_t matrixDims{rows};
+        const std::size_t matrixDims{rows};
         // data is scalar, can omit later code
         if (matrixDims == 1) {
-            return std::expected<matrix<DataType>, MatrixError>{std::in_place, data};
+            return std::expected<matrix<DataType>, MatrixError>{data};
         }
 
         matrix<DataType> complement(matrixDims, vector<DataType>(matrixDims, 0));
@@ -274,8 +291,8 @@ namespace mtx {
         // sign multiplier
         DataType         sign{static_cast<DataType>(1)};
         matrix<DataType> minor(matrixDims, vector<DataType>(matrixDims, 0));
-        for (size_t row{0}; row < matrixDims; ++row) {
-            for (size_t col{0}; col < matrixDims; col++) {
+        for (std::size_t row{0}; row < matrixDims; ++row) {
+            for (std::size_t col{0}; col < matrixDims; col++) {
                 // get cofactor of data[row][col]
 
                 // moving temporary prevents copy elision, which is even better
@@ -303,27 +320,26 @@ namespace mtx {
             }
         }
         // result object
-        // adjosize_t is transposed of complement matrix
-        return std::expected<matrix<DataType>, MatrixError>{std::in_place,
-                                                            matrix<DataType>{std::move(getTranspose(complement))}};
+        // adjostd::size_t is transposed of complement matrix
+        return std::expected<matrix<DataType>, MatrixError>{getTranspose(complement)};
     }
 
     template <typename DataType>
     std::expected<matrix<DataType>, MatrixError>
     Matrix<DataType>::getInverse(const matrix<DataType>& data) const noexcept {
-        size_t rows{data.size()};
-        size_t cols{data[0].size()};
+        const std::size_t rows{data.size()};
+        const std::size_t cols{data[0].size()};
         // assert correct dimensions
         assert(rows == cols);
         if (rows != cols) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
 
         // matrix square
-        size_t matrixDims{rows};
+        const std::size_t matrixDims{rows};
         // data is scalar, can omit later code
         if (matrixDims == 1) {
-            return std::expected<matrix<DataType>, MatrixError>{std::in_place, data};
+            return std::expected<matrix<DataType>, MatrixError>{data};
         }
 
         DataType det{};
@@ -338,7 +354,7 @@ namespace mtx {
         // assert correct determinant
         assert(det != 0);
         if (det == 0) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::Singularity};
+            return std::unexpected<MatrixError>{MatrixError::Singularity};
         }
 
         matrix<DataType> adjoint{};
@@ -351,111 +367,109 @@ namespace mtx {
 
         // inverse is adjoint matrix divided by det factor
         // division is multiplication by inverse
-        return std::expected<matrix<DataType>, MatrixError>{std::in_place,
-                                                            matrix<DataType>{std::move(getScale(adjoint, 1 / det))}};
+        return std::expected<matrix<DataType>, MatrixError>{getScale(adjoint, 1 / det)};
     }
 
     template <typename DataType>
     std::expected<matrix<DataType>, MatrixError>
     Matrix<DataType>::getUpperTriangular(const matrix<DataType>& data) const noexcept {
-        size_t rows{data.size()};
-        size_t cols{data[0].size()};
+        const std::size_t rows{data.size()};
+        const std::size_t cols{data[0].size()};
         // assert correct dimensions
         assert(rows == cols);
         if (rows != cols) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
 
         // matrix square
-        size_t matrixDims{rows};
+        const std::size_t matrixDims{rows};
         // data is scalar
         if (matrixDims == 1)
-            return std::expected<matrix<DataType>, MatrixError>{std::in_place, data};
+            return std::expected<matrix<DataType>, MatrixError>{data};
 
         // result object
         // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
-        return std::expected<matrix<DataType>, MatrixError>{
-            std::in_place, matrix<DataType>{std::move(getTranspose(getLowerTriangular(data)))}};
+        return std::expected<matrix<DataType>, MatrixError>{getTranspose(getLowerTriangular(data))};
     }
 
     template <typename DataType>
     std::expected<matrix<DataType>, MatrixError>
     Matrix<DataType>::getLowerTriangular(const matrix<DataType>& data) const noexcept {
-        size_t rows{data.size()};
-        size_t cols{data[0].size()};
+        const std::size_t rows{data.size()};
+        const std::size_t cols{data[0].size()};
         // assert correct dimensions
         assert(rows == cols);
         if (rows != cols) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
 
         // matrix square
-        size_t matrixDims = rows = cols;
+        const std::size_t matrixDims = rows = cols;
         // data is scalar
         if (matrixDims == 1) {
-            return std::expected<matrix<DataType>, MatrixError>{std::in_place, data};
+            return std::expected<matrix<DataType>, MatrixError>{data};
         }
 
         // result object
         matrix<DataType> lowerTriangular(matrixDims, vector<DataType>(matrixDims, 0));
 
         // decomposing data matrix into lower triangular
-        for (size_t row{0}; row < matrixDims; ++row) {
-            for (size_t col{0}; col <= row; ++col) {
-                DataType sum{static_cast<DataType>(0)};
+        for (std::size_t row{0}; row < matrixDims; ++row) {
+            for (std::size_t col{0}; col <= row; ++col) {
+                DataType sum{};
 
                 // summation for diagonals
                 if (col == row) {
-                    for (size_t iSumCol{0}; iSumCol < col; ++iSumCol) {
+                    for (std::size_t iSumCol{0}; iSumCol < col; ++iSumCol) {
                         sum += pow(lowerTriangular[col][iSumCol], 2);
                     }
                     lowerTriangular[col][col] = sqrt(data[col][col] - sum);
                 } else {
                     // evaluating L(row, col) using L(col, col)
-                    for (size_t iSumCol{0}; iSumCol < col; ++iSumCol) {
+                    for (std::size_t iSumCol{0}; iSumCol < col; ++iSumCol) {
                         sum += (lowerTriangular[row][iSumCol] * lowerTriangular[col][iSumCol]);
                     }
                     lowerTriangular[row][col] = (data[row][col] - sum) / lowerTriangular[col][col];
                 }
             }
         }
-        return std::expected<matrix<DataType>, MatrixError>{std::in_place, lowerTriangular};
+        return std::expected<matrix<DataType>, MatrixError>{std::move(lowerTriangular)};
     }
 
     template <typename DataType>
     std::expected<matrix<DataType>, MatrixError>
     Matrix<DataType>::getProduct(const matrix<DataType>& left, const matrix<DataType>& right) const noexcept {
-        size_t leftRows{left.size()};
-        size_t rightRows{right.size()};
-        size_t leftCols = {left[0].size()};
-        size_t rightCols{right[0].size()};
+        const std::size_t leftRows{left.size()};
+        const std::size_t rightRows{right.size()};
+        const std::size_t leftCols = {left[0].size()};
+        const std::size_t rightCols{right[0].size()};
 
         // assert correct dimensions
         assert(leftCols == rightRows);
         if (leftCols != rightRows) {
-            return std::unexpected<MatrixError>{std::in_place, MatrixError::WrongDims};
+            return std::unexpected<MatrixError>{MatrixError::WrongDims};
         }
 
-        size_t           productRows{leftRows};
-        size_t           productCols{rightCols};
-        matrix<DataType> product(productRows, vector<DataType>(productCols, 0));
+        const std::size_t productRows{leftRows};
+        const std::size_t productCols{rightCols};
+        matrix<DataType>  product(productRows, vector<DataType>(productCols, 0));
 
-        for (size_t leftRow{0}; leftRow < leftRows; ++leftRow) {
-            for (size_t rightCol{0}; rightCol < rightCols; ++rightCol) {
+        for (std::size_t leftRow{0}; leftRow < leftRows; ++leftRow) {
+            for (std::size_t rightCol{0}; rightCol < rightCols; ++rightCol) {
                 DataType sum{0};
-                for (size_t leftCol{0}; leftCol < leftCols; ++leftCol) {
+                for (std::size_t leftCol{0}; leftCol < leftCols; ++leftCol) {
                     sum += left[leftRow][leftCol] * right[leftCol][rightCol];
                 }
                 product[leftRow][rightCol] = sum;
             }
         }
-        return std::expected<matrix<DataType>, MatrixError>{std::in_place, product};
+        return std::expected<matrix<DataType>, MatrixError>{std::move(product)};
     }
 
     template <typename DataType>
     matrix<DataType> Matrix<DataType>::getScale(const matrix<DataType>& data, DataType factor) const noexcept {
-        size_t rows{data.size()};
-        size_t cols{data[0].size()};
+        const std::size_t rows{data.size()};
+        const std::size_t cols{data[0].size()};
 
         // factor is 1 then dont need to do anything
         if (factor == 1) {
@@ -467,8 +481,8 @@ namespace mtx {
         }
 
         matrix<DataType> scale(rows, vector<DataType>(rows, 0));
-        for (size_t row{0}; row < rows; ++row) {
-            for (size_t col{0}; col < cols; ++col) {
+        for (std::size_t row{0}; row < rows; ++row) {
+            for (std::size_t col{0}; col < cols; ++col) {
                 scale[row][col] = data[row][col] * factor;
             }
         }
@@ -476,16 +490,16 @@ namespace mtx {
     }
 
     template <typename DataType>
-    void Matrix<DataType>::appendRow(size_t rowIdx, const vector<DataType>& row) noexcept {
+    void Matrix<DataType>::appendRow(std::size_t rowIdx, const vector<DataType>& row) noexcept {
         assert(row.size() == cols_);
         data_.insert(data_.begin() + rowIdx, row); // basic pointer math (iterators are pointers)
         ++rows_;
     }
 
     template <typename DataType>
-    void Matrix<DataType>::appendColumn(size_t colIdx, const vector<DataType>& column) noexcept {
+    void Matrix<DataType>::appendColumn(std::size_t colIdx, const vector<DataType>& column) noexcept {
         assert(column.size() == rows_);
-        for (size_t row{0}; row < rows_; ++row) {
+        for (std::size_t row{0}; row < rows_; ++row) {
             data_[row].insert(data_[row].begin() + colIdx,
                               column[row]); // basic pointer math (iterators are pointers)
         }
@@ -493,16 +507,16 @@ namespace mtx {
     }
 
     template <typename DataType>
-    void Matrix<DataType>::deleteRow(size_t rowIdx) noexcept {
+    void Matrix<DataType>::deleteRow(std::size_t rowIdx) noexcept {
         assert(rowIdx <= rows_);
         data_.erase(data_.begin() + rowIdx); // basic pointer math (iterators are pointers)
         --rows_;
     }
 
     template <typename DataType>
-    void Matrix<DataType>::deleteColumn(size_t colIdx) noexcept {
+    void Matrix<DataType>::deleteColumn(std::size_t colIdx) noexcept {
         assert(colIdx <= cols_);
-        for (size_t row{0}; row < rows_; ++row) {
+        for (std::size_t row{0}; row < rows_; ++row) {
             data_[row].erase(data_[row].begin() + colIdx); // basic pointer math (iterators are pointers)
         }
         --cols_;
@@ -521,7 +535,7 @@ namespace mtx {
     template <typename DataType>
     vector<DataType> Matrix<DataType>::getEndColumn() const noexcept {
         vector<DataType> ret(rows_, 0);
-        for (size_t row{0}; row < rows_; ++row) {
+        for (std::size_t row{0}; row < rows_; ++row) {
             ret[row] = *(data_[row].back());
         }
         return ret;
@@ -530,14 +544,14 @@ namespace mtx {
     template <typename DataType>
     vector<DataType> Matrix<DataType>::getBeginColumn() const noexcept {
         vector<DataType> ret(rows_, 0);
-        for (size_t row{0}; row < rows_; ++row) {
+        for (std::size_t row{0}; row < rows_; ++row) {
             ret[row] = *(data_[row].begin());
         }
         return ret;
     }
 
     template <typename DataType>
-    inline void Matrix<DataType>::resize(size_t newRows, size_t newCols) noexcept {
+    inline void Matrix<DataType>::resize(std::size_t newRows, std::size_t newCols) noexcept {
         assert(newRows > 0);
         assert(newCols > 0);
 
@@ -550,12 +564,12 @@ namespace mtx {
     }
 
     template <typename DataType>
-    inline size_t Matrix<DataType>::getRows() const noexcept {
+    inline std::size_t Matrix<DataType>::getRows() const noexcept {
         return rows_;
     }
 
     template <typename DataType>
-    inline size_t Matrix<DataType>::getCols() const noexcept {
+    inline std::size_t Matrix<DataType>::getCols() const noexcept {
         return cols_;
     }
 
@@ -565,7 +579,7 @@ namespace mtx {
 
         vector<DataType> ret(rows_, 0);
 
-        for (size_t diag{0}; diag < rows_; ++diag) {
+        for (std::size_t diag{0}; diag < rows_; ++diag) {
             ret[diag] = data_[diag][diag];
         }
         return ret;
@@ -573,7 +587,7 @@ namespace mtx {
 
     template <typename DataType>
     void Matrix<DataType>::transpose() noexcept {
-        data_ = std::move(getTranspose(data_));
+        data_ = getTranspose(data_);
 
         // swap dimensions
         std::swap(rows_, cols_);
@@ -605,8 +619,8 @@ namespace mtx {
 
         Matrix<DataType> result(other.rows_, other.cols_);
 
-        for (size_t row{0}; row < rows_; ++row) {
-            for (size_t col{0}; col < cols_; ++col) {
+        for (std::size_t row{0}; row < rows_; ++row) {
+            for (std::size_t col{0}; col < cols_; ++col) {
                 result.data_[row][col] = data_[row][col] + other.data_[row][col];
             }
         }
@@ -620,8 +634,8 @@ namespace mtx {
         assert(other.rows_ == rows_);
         assert(other.cols_ == rows_);
 
-        for (size_t row{0}; row < rows_; ++row) {
-            for (size_t col{0}; col < cols_; ++col) {
+        for (std::size_t row{0}; row < rows_; ++row) {
+            for (std::size_t col{0}; col < cols_; ++col) {
                 data_[row][col] += other.data_[row][col];
             }
         }
@@ -637,8 +651,8 @@ namespace mtx {
 
         Matrix<DataType> result(other.rows_, other.cols_);
 
-        for (size_t row{0}; row < rows_; ++row) {
-            for (size_t col{0}; col < cols_; ++col) {
+        for (std::size_t row{0}; row < rows_; ++row) {
+            for (std::size_t col{0}; col < cols_; ++col) {
                 result.data_[row][col] = data_[row][col] - other.data_[row][col];
             }
         }
@@ -652,8 +666,8 @@ namespace mtx {
         assert(other.rows_ == rows_);
         assert(other.cols_ == rows_);
 
-        for (size_t row{0}; row < rows_; ++row) {
-            for (size_t col{0}; col < cols_; ++col) {
+        for (std::size_t row{0}; row < rows_; ++row) {
+            for (std::size_t col{0}; col < cols_; ++col) {
                 data_[row][col] -= other.data_[row][col];
             }
         }
@@ -671,7 +685,7 @@ namespace mtx {
         else if (factor == 0) {
             return Matrix<DataType>(rows_, cols_, 0);
         }
-        return Matrix<DataType>(std::move(getScale(data_, factor))); // Matrix cstr no.1
+        return Matrix<DataType>(getScale(data_, factor)); // Matrix cstr no.1
     }
 
     // multiplication operator for scalars (return reference to this (lhs))
@@ -687,7 +701,7 @@ namespace mtx {
             return *this;
         }
 
-        data_ = std::move(getScale(data_, factor)); // vector move operator
+        data_ = getScale(data_, factor); // vector move operator
         return *this;
     }
 
@@ -703,7 +717,7 @@ namespace mtx {
         }
 
         // division is multiplication by inverse
-        return Matrix<DataType>(std::move(getScale(data_, 1 / factor))); // Matrix cstr no.1
+        return Matrix<DataType>(getScale(data_, 1 / factor)); // Matrix cstr no.1
     }
 
     // division operator for scalars (return reference to this (lhs))
@@ -718,7 +732,7 @@ namespace mtx {
         }
 
         // division is multiplication by inverse
-        data_ = std::move(getScale(data_, 1 / factor)); // vector move operator
+        data_ = getScale(data_, 1 / factor); // vector move operator
         return *this;
     }
 
@@ -728,7 +742,7 @@ namespace mtx {
         // assert correct dimensions
         assert(cols_ == other.rows_);
 
-        Matrix<DataType> result(std::move(getProduct(data_, other.data_))); // Matrix cstr no.1
+        Matrix<DataType> result(getProduct(data_, other.data_)); // Matrix cstr no.1
 
         result.rows_ = rows_;
         result.cols_ = other.cols_;
@@ -741,7 +755,7 @@ namespace mtx {
         // assert correct dimensions
         assert(cols_ == other.rows_);
 
-        data_ = std::move(getProduct(data_, other.data_));
+        data_ = getProduct(data_, other.data_);
 
         rows_ = rows_;
         cols_ = other.cols_;
@@ -824,13 +838,13 @@ namespace mtx {
 
     // index operator for rows (return reference of result)
     template <typename DataType>
-    inline vector<DataType> Matrix<DataType>::operator()(size_t rowIdx) const noexcept {
+    inline vector<DataType> Matrix<DataType>::operator()(std::size_t rowIdx) const noexcept {
         return data_[rowIdx];
     }
 
     // index operator for rows/cols (elements) (return reference of result)
     template <typename DataType>
-    inline DataType Matrix<DataType>::operator()(size_t rowIdx, size_t colIdx) const noexcept {
+    inline DataType Matrix<DataType>::operator()(std::size_t rowIdx, std::size_t colIdx) const noexcept {
         return data_[rowIdx][colIdx];
     }
 

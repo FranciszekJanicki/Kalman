@@ -1,11 +1,11 @@
 add_library(Kalman STATIC 
-        "src/kalman.cpp"
-        "src/matrix.hpp"
+        "kalman.cpp"
+        "matrix.hpp"
 )
 
 target_include_directories(Kalman 
-        PUBLIC "include"
-        PRIVATE "src"
+        PUBLIC 
+        "."
 )
 
 set(CMAKE_CXX_STANDARD 23)

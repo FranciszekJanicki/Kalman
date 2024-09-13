@@ -1,52 +1,46 @@
 #ifndef KALMAN_H
 #define KALMAN_H
 
-#include <vector>
-
-#include "../src/matrix.hpp"
+#include "matrix.hpp"
 // #include "Eigen/Dense"
 
 struct FilterModel {
-    size_t             states_{}; // number of filter units
-    size_t             inputs_{}; // number of filter inputs
-    mtx::Matrix<float> A_{};      // state transition matrix (numStates x numInputs)
-    mtx::Matrix<float> x_{};      // state vector (numStates x 1)
-    mtx::Matrix<float> B_{};      // input transition matrix (numStates x numInputs)
-    mtx::Matrix<float> u_{};      // input vector (numInputs x 1)
-    mtx::Matrix<float> P_{};      // state covariance matrix (numStates x numStates)
-    mtx::Matrix<float> Q_{};      // input covariance matrix (numInputs x numInputs)
+    std::size_t        states{}; // number of filter units
+    std::size_t        inputs{}; // number of filter inputs
+    mtx::Matrix<float> A{};      // state transition matrix (numStates x numInputs)
+    mtx::Matrix<float> x{};      // state vector (numStates x 1)
+    mtx::Matrix<float> B{};      // input transition matrix (numStates x numInputs)
+    mtx::Matrix<float> u{};      // input vector (numInputs x 1)
+    mtx::Matrix<float> P{};      // state covariance matrix (numStates x numStates)
+    mtx::Matrix<float> Q{};      // input covariance matrix (numInputs x numInputs)
 };
 
 struct MeasureModel {
-    size_t             states_{};       // number of filter units
-    size_t             measurements_{}; // number of meauserements performed
-    mtx::Matrix<float> H_{};            // measurement transformation matrix (measurements_ x states_)
-    mtx::Matrix<float> z_{};            // measurement vector (numMeasures x  1)
-    mtx::Matrix<float> R_{};            // process noise (measurement uncertainty)
-                                        // (measurements_ x measurements_)
-    mtx::Matrix<float> y_{};            // innovation (measurements_ x 1)
-    mtx::Matrix<float> S_{};            // residual covariance (measurements_ x measurements_)
-    mtx::Matrix<float> K_{};            // kalman gain (states_ x measurements_)
+    std::size_t        states{};       // number of filter units
+    std::size_t        measurements{}; // number of meauserements performed
+    mtx::Matrix<float> H{};            // measurement transformation matrix (measurements x states)
+    mtx::Matrix<float> z{};            // measurement vector (numMeasures x  1)
+    mtx::Matrix<float> R{};            // process noise (measurement uncertainty)
+                                       // (measurements x measurements)
+    mtx::Matrix<float> y{};            // innovation (measurements x 1)
+    mtx::Matrix<float> S{};            // residual covariance (measurements x measurements)
+    mtx::Matrix<float> K{};            // kalman gain (states x measurements)
 };
 
 class Kalman {
 public:
-    Kalman(FilterModel& filter, MeasureModel& measure);
-    Kalman(FilterModel&& filter, MeasureModel&& measure);
-    Kalman(const Kalman&)            = default;
-    Kalman(Kalman&&)                 = default;
-    Kalman& operator=(const Kalman&) = default;
-    Kalman& operator=(Kalman&&)      = default;
-    ~Kalman()                        = default;
+    explicit Kalman() = default;
+    explicit Kalman(FilterModel& filter, MeasureModel& measure);
+    explicit Kalman(FilterModel&& filter, MeasureModel&& measure);
 
-    inline const mtx::Matrix<float>& getState() const;
-    inline double                    getTime() const;
-    inline bool                      getIsInitialized() const;
-    inline void                      setInputs(const mtx::Matrix<float>& inputs);
+    [[nodiscard]] inline const mtx::Matrix<float>& getState() const noexcept;
+    [[nodiscard]] inline double                    getTime() const noexcept;
+    [[nodiscard]] inline bool                      getIsInitialized() const noexcept;
+    inline void                                    setInputs(const mtx::Matrix<float>& inputs) noexcept;
 
 private:
-    void predict();
-    void update();
+    void predict() noexcept;
+    void update() noexcept;
 
     bool  isInitialized_{false};
     float stepTime_{1.0f};
