@@ -30,13 +30,13 @@ struct MeasureModel {
 class Kalman {
 public:
     explicit Kalman() = default;
-    explicit Kalman(FilterModel& filter, MeasureModel& measure);
+    explicit Kalman(const FilterModel& filter, const MeasureModel& measure);
     explicit Kalman(FilterModel&& filter, MeasureModel&& measure);
 
-    [[nodiscard]] inline const mtx::Matrix<float>& getState() const noexcept;
-    [[nodiscard]] inline double                    getTime() const noexcept;
-    [[nodiscard]] inline bool                      getIsInitialized() const noexcept;
-    inline void                                    setInputs(const mtx::Matrix<float>& inputs) noexcept;
+    [[nodiscard]] const mtx::Matrix<float>& getState() const noexcept;
+    [[nodiscard]] double                    getTime() const noexcept;
+    [[nodiscard]] bool                      getIsInitialized() const noexcept;
+    void                                    setInputs(const mtx::Matrix<float>& inputs) noexcept;
 
 private:
     void predict() noexcept;

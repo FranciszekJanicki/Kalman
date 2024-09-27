@@ -29,14 +29,14 @@ namespace mtx {
 
     enum class MatrixError { WrongDims, Singularity };
 
-    static constexpr std::string_view matrixErrorToString(MatrixError error) noexcept {
+    static constexpr auto matrixErrorToString(MatrixError error) noexcept {
         switch (error) {
             case MatrixError::WrongDims:
-                return std::string_view{"Wrong dims"};
+                return "Wrong dims";
             case MatrixError::Singularity:
-                return std::string_view{"Singularity"};
+                return "Singularity";
             default:
-                return std::string_view{"None"};
+                return "None";
         }
     }
 
@@ -53,7 +53,7 @@ namespace mtx {
     class Matrix {
     public:
         explicit Matrix(std::size_t rows = 0, std::size_t cols = 0, DataType value = 0) noexcept; // 0
-        explicit Matrix(matrix<DataType>& otherData) noexcept;                                    // 1
+        explicit Matrix(const matrix<DataType>& otherData) noexcept;                              // 1
         explicit Matrix(matrix<DataType>&& otherData) noexcept;                                   // 2
         explicit Matrix(const vector<DataType>& diag) noexcept;                                   // 3
 
@@ -71,28 +71,28 @@ namespace mtx {
         void deleteColumn(std::size_t colIdx) noexcept;
         void resize(std::size_t newRows, std::size_t newCols) noexcept;
 
-        [[nodiscard]] inline std::size_t      getRows() const noexcept;
-        [[nodiscard]] inline std::size_t      getCols() const noexcept;
-        [[nodiscard]] inline vector<DataType> getEndRow() const noexcept;
-        [[nodiscard]] inline vector<DataType> getBeginRow() const noexcept;
-        [[nodiscard]] inline vector<DataType> getEndColumn() const noexcept;
-        [[nodiscard]] inline vector<DataType> getBeginColumn() const noexcept;
-        [[nodiscard]] inline vector<DataType> getDiag() const noexcept;
+        [[nodiscard]] std::size_t      getRows() const noexcept;
+        [[nodiscard]] std::size_t      getCols() const noexcept;
+        [[nodiscard]] vector<DataType> getEndRow() const noexcept;
+        [[nodiscard]] vector<DataType> getBeginRow() const noexcept;
+        [[nodiscard]] vector<DataType> getEndColumn() const noexcept;
+        [[nodiscard]] vector<DataType> getBeginColumn() const noexcept;
+        [[nodiscard]] vector<DataType> getDiag() const noexcept;
 
-        inline Matrix<DataType>  operator*(const DataType& factor) const noexcept;
-        inline Matrix<DataType>  operator/(const DataType& factor) const noexcept;
-        inline Matrix<DataType>  operator+(const Matrix<DataType>& other) const noexcept;
-        inline Matrix<DataType>  operator-(const Matrix<DataType>& other) const noexcept;
-        inline Matrix<DataType>  operator*(const Matrix<DataType>& other) const noexcept;
-        inline Matrix<DataType>  operator/(const Matrix<DataType>& other) const noexcept;
-        inline Matrix<DataType>& operator*=(const DataType& factor) noexcept;
-        inline Matrix<DataType>& operator/=(const DataType& factor) noexcept;
-        inline Matrix<DataType>& operator+=(const Matrix<DataType>& other) noexcept;
-        inline Matrix<DataType>& operator-=(const Matrix<DataType>& other) noexcept;
-        inline Matrix<DataType>& operator*=(const Matrix<DataType>& other) noexcept;
-        inline Matrix<DataType>& operator/=(const Matrix<DataType>& other) noexcept;
-        inline vector<DataType>  operator()(std::size_t rowIdx) const noexcept;
-        inline DataType          operator()(std::size_t rowIdx, std::size_t colIdx) const noexcept;
+        Matrix<DataType>  operator*(const DataType& factor) const noexcept;
+        Matrix<DataType>  operator/(const DataType& factor) const noexcept;
+        Matrix<DataType>  operator+(const Matrix<DataType>& other) const noexcept;
+        Matrix<DataType>  operator-(const Matrix<DataType>& other) const noexcept;
+        Matrix<DataType>  operator*(const Matrix<DataType>& other) const noexcept;
+        Matrix<DataType>  operator/(const Matrix<DataType>& other) const noexcept;
+        Matrix<DataType>& operator*=(const DataType& factor) noexcept;
+        Matrix<DataType>& operator/=(const DataType& factor) noexcept;
+        Matrix<DataType>& operator+=(const Matrix<DataType>& other) noexcept;
+        Matrix<DataType>& operator-=(const Matrix<DataType>& other) noexcept;
+        Matrix<DataType>& operator*=(const Matrix<DataType>& other) noexcept;
+        Matrix<DataType>& operator/=(const Matrix<DataType>& other) noexcept;
+        vector<DataType>  operator()(std::size_t rowIdx) const noexcept;
+        DataType          operator()(std::size_t rowIdx, std::size_t colIdx) const noexcept;
 
     private:
         [[nodiscard]] std::expected<DataType, MatrixError>         getDeterminant(const matrix<DataType>& data,
@@ -141,11 +141,11 @@ namespace mtx {
 
     template <typename DataType>
     Matrix<DataType>::Matrix(matrix<DataType>&& otherData) noexcept :
-        rows_{otherData.size()}, cols_{otherData[0].size()}, data_{std::move(otherData)} {
+        rows_{otherData.size()}, cols_{otherData[0].size()}, data_{std::forward<matrix<DataType>>(otherData)} {
     }
 
     template <typename DataType>
-    Matrix<DataType>::Matrix(matrix<DataType>& otherData) noexcept :
+    Matrix<DataType>::Matrix(const matrix<DataType>& otherData) noexcept :
         rows_{otherData.size()}, cols_{otherData[0].size()}, data_{otherData} {
     }
 
@@ -228,14 +228,20 @@ namespace mtx {
 
             // moving temporary prevents copy elision, which is even better
             if (auto expectedMinor{getMinor(data, 0, col, matrixDims)}; expectedMinor.has_value()) {
-                minor = expectedMinor.value();
+                // casting object to rvalue reference to get rvalue qualified overload of
+                // .value(), which not only allows
+                // for move of value, but also forces it
+                minor = std::move(expectedMinor).value();
             } else {
                 LOG(expectedMinor.error());
                 std::abort();
             }
 
             if (auto expectedDet{getDeterminant(minor, matrixDims - 1)}; expectedDet.has_value()) {
-                det += sign * data[0][col] * expectedDet.value();
+                // casting object to rvalue reference to get rvalue qualified overload of
+                // .value(), which not only allows
+                // for move of value, but also forces it
+                det += sign * data[0][col] * std::move(expectedDet).value();
             } else {
                 LOG(expectedDet.error());
                 std::abort();
@@ -297,7 +303,10 @@ namespace mtx {
 
                 // moving temporary prevents copy elision, which is even better
                 if (auto expectedMinor{getMinor(data, row, col, matrixDims)}; expectedMinor.has_value()) {
-                    minor = expectedMinor.value();
+                    // casting object to rvalue reference to get rvalue qualified overload of
+                    // .value(), which not only allows
+                    // for move of value, but also forces it
+                    minor = std::move(expectedMinor).value();
                 } else {
                     LOG(expectedMinor.error());
                     std::abort();
@@ -312,7 +321,10 @@ namespace mtx {
 
                 // complement is matrix of determinants of minors with alternating signs!!!
                 if (auto expectedDet{getDeterminant(minor, matrixDims - 1)}; expectedDet.has_value()) {
-                    complement[row][col] = (sign)*expectedDet.value();
+                    // casting object to rvalue reference to get rvalue qualified overload of
+                    // .value(), which not only allows
+                    // for move of value, but also forces it
+                    complement[row][col] = (sign)*std::move(expectedDet).value();
                 } else {
                     LOG(expectedDet.error());
                     std::abort();
@@ -345,7 +357,9 @@ namespace mtx {
         DataType det{};
         // moving temporary prevents copy elision, which is even better
         if (auto expectedDet{getDeterminant(data, matrixDims)}; expectedDet.has_value()) {
-            det = expectedDet.value();
+            // casting object to rvalue reference to get rvalue qualified overload of .value(), which not only allows
+            // for move of value, but also forces it
+            det = std::move(expectedDet).value();
         } else {
             LOG(expectedDet.error());
             std::abort();
@@ -359,7 +373,9 @@ namespace mtx {
 
         matrix<DataType> adjoint{};
         if (auto expectedAdjoint{getAdjoint(data)}; expectedAdjoint.has_value()) {
-            adjoint = expectedAdjoint.value();
+            // casting object to rvalue reference to get rvalue qualified overload of .value(), which not only allows
+            // for move of value, but also forces it
+            adjoint = std::move(expectedAdjoint).value();
         } else {
             LOG(expectedAdjoint.error());
             std::abort();
@@ -603,7 +619,9 @@ namespace mtx {
         //     std::abort();
         // }
         if (auto expectedInverse{getInverse(data_)}; expectedInverse.has_value()) {
-            data_ = expectedInverse.value();
+            // casting object to rvalue reference to get rvalue qualified overload of .value(), which not only allows
+            // for move of value, but also forces it
+            data_ = std::move(expectedInverse).value();
         } else {
             LOG(expectedInverse.error());
             std::abort();
@@ -771,8 +789,14 @@ namespace mtx {
         // division is multiplication by inverse
         // no move for temporarires since it would disable copy elision
         if (auto expectedInverse{getInverse(other.data_)}; expectedInverse.has_value()) {
-            if (auto expectedProduct{getProduct(data_, expectedInverse.value())}; expectedProduct.has_value()) {
-                Matrix<DataType> result{expectedProduct.value()};
+            // casting object to rvalue reference to get rvalue qualified overload of .value(), which not only allows
+            // for move of value, but also forces it
+            if (auto expectedProduct{getProduct(data_, std::move(expectedInverse).value())};
+                expectedProduct.has_value()) {
+                // casting object to rvalue reference to get rvalue qualified overload of .value(), which not only
+                // allows
+                // for move of value, but also forces it
+                Matrix<DataType> result{std::move(expectedProduct).value()};
                 result.rows_ = rows_;
                 result.cols_ = other.cols_;
                 return result;
@@ -795,8 +819,14 @@ namespace mtx {
         // division is multiplication by inverse
         // no move for temporarires since it would disable copy elision
         if (auto expectedInverse{getInverse(other.data_)}; expectedInverse.has_value()) {
-            if (auto expectedProduct{getProduct(data_, expectedInverse.value())}; expectedProduct.has_value()) {
-                *this = expectedProduct.value();
+            // casting object to rvalue reference to get rvalue qualified overload of .value(), which not only allows
+            // for move of value, but also forces it
+            if (auto expectedProduct{getProduct(data_, std::move(expectedInverse).value())};
+                expectedProduct.has_value()) {
+                // casting object to rvalue reference to get rvalue qualified overload of .value(), which not only
+                // allows
+                // for move of value, but also forces it
+                *this = std::move(expectedProduct).value();
                 cols_ = other.cols_;
                 return *this;
             } else {
@@ -808,33 +838,6 @@ namespace mtx {
             std::abort();
         }
     }
-
-    // // copy operator (return reference to this (lhs))
-    // template <typename DataType>
-    // inline Matrix<DataType>& Matrix<DataType>::operator=(const Matrix<DataType>& other) noexcept{
-    //     if (this == &other) {
-    //         return *this;
-    //     }
-
-    //     this->data_ = other.data_;
-    //     cols_       = other.cols_;
-    //     rows_       = other.rows_;
-    //     return *this;
-    // }
-
-    // // move operator (return reference to this (lhs))
-    // template <typename DataType>
-    // inline Matrix<DataType>& Matrix<DataType>::operator=(Matrix<DataType>&& other) noexcept{
-    //     if (this == &other) {
-    //         return *this;
-    //     }
-
-    //     data_ = std::move(other.data_);
-    //     // no move operator for PODs
-    //     cols_ = other.cols_;
-    //     rows_ = other.rows_;
-    //     return *this;
-    // }
 
     // index operator for rows (return reference of result)
     template <typename DataType>

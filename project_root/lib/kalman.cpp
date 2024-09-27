@@ -4,11 +4,11 @@
 #include <string_view>
 #include <utility>
 
-inline static void LOG(std::string_view error) {
+inline static void LOG(const auto* error) {
     std::cerr << error;
 }
 
-Kalman::Kalman(FilterModel& filter, MeasureModel& measure) :
+Kalman::Kalman(const FilterModel& filter, const MeasureModel& measure) :
     A_{filter.A}, B_{filter.B}, P_{filter.P}, Q_{filter.Q}, x_{filter.x}, u_{filter.u}, H_{measure.H}, R_{measure.R},
     S_{measure.S}, K_{measure.K}, z_{measure.z}, y_{measure.z}, inputs_{filter.inputs}, states_{filter.inputs},
     measurements_{measure.measurements} {
