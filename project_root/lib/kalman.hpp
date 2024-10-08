@@ -1,7 +1,7 @@
 #ifndef KALMAN_HPP
 #define KALMAN_HPP
 
-#include "matrix.hpp"
+#include "matrix_wrapper.hpp"
 
 struct filter_model {
     std::size_t states{}; // number of filter units
@@ -41,36 +41,30 @@ struct measure_model {
 
 class kalman {
 public:
-    kalman() = default;
+    kalman(const filter_model& filter, const measure_model& measure);
 
-    explicit kalman(const filter_model& filter, const measure_model& measure);
-
-    explicit kalman(filter_model&& filter, measure_model&& measure);
+    kalman(filter_model&& filter, measure_model&& measure) noexcept;
 
     [[nodiscard]] matrix_wrapper<float>&& state() && noexcept;
 
     [[nodiscard]] const matrix_wrapper<float>& state() const& noexcept;
 
-    [[nodiscard]] double current_time() const noexcept;
-
-    [[nodiscard]] bool is_initialized() const noexcept;
-
     void inputs(const matrix_wrapper<float>& inputs);
 
     void inputs(matrix_wrapper<float>&& inputs) noexcept;
 
+    void predict();
+
+    void update();
+
 private:
-    void predict() noexcept;
-
-    void update() noexcept;
-
     bool is_initialized_{false};
 
-    float step_time_{1.0f};
+    [[maybe_unused]] float step_time_{1.0f};
 
-    float current_time_{0.0f};
+    [[maybe_unused]] float current_time_{0.0f};
 
-    float start_time_{0.0f};
+    [[maybe_unused]] float start_time_{0.0f};
 
     // common model
     size_t states_{1}; // number of filter outputs
