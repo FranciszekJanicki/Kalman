@@ -1,5 +1,6 @@
 .gitmodules
 build/
+project_root/third_party/
 
 # Prerequisites
 *.d

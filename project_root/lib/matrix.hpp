@@ -30,17 +30,12 @@ namespace {
         }
     }
 
-    constexpr void print_matrix_error(const matrix_error error) noexcept
+    [[maybe_unused]] constexpr void print_matrix_error(const matrix_error error) noexcept
     {
         std::print("%s", matrix_error_to_string(error));
     }
 
 }; // namespace
-
-struct diagonal_t {
-    explicit diagonal_t() = default;
-};
-constexpr diagonal_t diagonal_tag{};
 
 template <typename value_type>
 class matrix_wrapper {
@@ -48,10 +43,25 @@ public:
     using vector = std::vector<value_type>;
     using matrix = std::vector<std::vector<value_type>>;
 
-    [[nodiscard]] static constexpr matrix_wrapper<value_type> diagonal(const std::size_t matrix_dims,
-                                                                       const value_type value)
+    struct diagonal_t {
+        explicit diagonal_t() = default;
+    };
+    static constexpr diagonal_t diagonal_tag{};
+
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> row(const std::size_t rows)
     {
-        return matrix_wrapper<value_type>{diagonal_tag, matrix_dims, value};
+        return matrix_wrapper<value_type>{rows, 1};
+    }
+
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> column(const std::size_t columns)
+    {
+        return matrix_wrapper<value_type>{1, columns};
+    }
+
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> diagonal(const std::size_t diagnonals,
+                                                                       const value_type diagnonal_values)
+    {
+        return matrix_wrapper<value_type>{diagonal_tag, diagnonals, diagnonal_values};
     }
 
     [[nodiscard]] static constexpr matrix_wrapper<value_type> eye(const std::size_t matrix_dims)
@@ -71,29 +81,27 @@ public:
 
     constexpr matrix_wrapper() noexcept = default;
 
-    constexpr matrix_wrapper(const std::size_t rows, const std::size_t columns) :
-        rows_{rows}, columns_{columns}, data_{make_matrix(rows, columns)}
+    constexpr matrix_wrapper(const std::size_t rows, const std::size_t columns) : data_{make_matrix(rows, columns)}
     {
     }
 
-    constexpr matrix_wrapper(const std::size_t rows, const std::size_t columns, const value_type value) :
-        rows_{rows}, columns_{columns}, data_{make_matrix(rows, columns, value)}
+    constexpr matrix_wrapper(const std::size_t rows, const std::size_t columns, const value_type values) :
+        data_{make_matrix(rows, columns, values)}
     {
     }
 
     constexpr matrix_wrapper([[maybe_unused]] const diagonal_t diagonal_tag,
-                             const std::size_t matrix_dims,
-                             const value_type value) :
-        rows_{matrix_dims}, columns_{matrix_dims}, data_{make_diagonal(matrix_dims, value)}
+                             const std::size_t diagonals,
+                             const value_type diagonal_values) :
+        data_{make_diagonal(diagonals, diagonal_values)}
     {
     }
 
-    explicit constexpr matrix_wrapper(matrix&& data) noexcept :
-        rows_{data.size()}, columns_{data[0].size()}, data_{std::forward<matrix>(data)}
+    explicit constexpr matrix_wrapper(matrix&& data) noexcept : data_{std::forward<matrix>(data)}
     {
     }
 
-    explicit constexpr matrix_wrapper(const matrix& data) : rows_{data.size()}, columns_{data[0].size()}, data_{data}
+    explicit constexpr matrix_wrapper(const matrix& data) : data_{data}
     {
     }
 
@@ -110,25 +118,21 @@ public:
     constexpr void operator=(matrix&& data) noexcept
     {
         this->data_ = std::forward<matrix>(data);
-        this->rows_ = data.size();
-        this->columns_ = data[0].size();
     }
 
     constexpr void operator=(const matrix& data)
     {
         this->data_ = data;
-        this->rows_ = data.size();
-        this->columns_ = data[0].size();
     }
 
     constexpr matrix_wrapper& operator+=(const matrix_wrapper& other) noexcept
     {
         // assert correct dimensions
-        assert(other.rows_ == this->rows_);
-        assert(other.columns_ == this->rows_);
+        assert(other.rows() == this->rows());
+        assert(other.columns() == this->rows());
 
-        for (std::size_t row{0}; row < this->rows_; ++row) {
-            for (std::size_t column{0}; column < this->columns_; ++column) {
+        for (std::size_t row{0}; row < this->rows(); ++row) {
+            for (std::size_t column{0}; column < this->columns(); ++column) {
                 this->data_[row][column] += other.data_[row][column];
             }
         }
@@ -138,11 +142,11 @@ public:
     constexpr matrix_wrapper& operator-=(const matrix_wrapper& other) noexcept
     {
         // assert correct dimensions
-        assert(other.rows_ == this->rows_);
-        assert(other.columns_ == this->rows_);
+        assert(other.rows() == this->rows());
+        assert(other.columns() == this->rows());
 
-        for (std::size_t row{0}; row < this->rows_; ++row) {
-            for (std::size_t column{0}; column < this->columns_; ++column) {
+        for (std::size_t row{0}; row < this->rows(); ++row) {
+            for (std::size_t column{0}; column < this->columns(); ++column) {
                 this->data_[row][column] -= other.data_[row][column];
             }
         }
@@ -183,12 +187,12 @@ public:
     constexpr matrix_wrapper& operator*=(const matrix_wrapper& other) noexcept
     {
         // assert correct dimensions
-        assert(this->columns_ == other.rows_);
+        assert(this->columns() == other.rows());
 
         if (auto expected_product{product(this->data_, other.data_)}; expected_product.has_value()) {
             this->data_ = std::move(expected_product).value();
-            // this->rows_ = this->rows_;
-            this->columns_ = other.columns_;
+            // this->rows() = this->rows();
+            this->columns() = other.columns();
             return *this;
         }
         else {
@@ -200,13 +204,13 @@ public:
     constexpr matrix_wrapper& operator/=(const matrix_wrapper& other) noexcept
     {
         // assert correct dimensions
-        assert(this->columns_ == other.rows_);
+        assert(this->columns() == other.rows());
 
         // division is multiplication by inverse
         if (auto expected_inverse{inverse(other.data_)}; expected_inverse.has_value()) {
             if (auto expected_product{product(this->data_, expected_inverse.value())}; expected_product.has_value()) {
                 *this = std::move(expected_product).value();
-                this->columns_ = other.columns_;
+                this->columns() = other.columns();
                 return *this;
             }
             else {
@@ -223,13 +227,13 @@ public:
     constexpr matrix_wrapper operator+(const matrix_wrapper& other) const noexcept
     {
         // assert correct dimensions
-        assert(other.rows_ == this->rows_);
-        assert(other.columns_ == this->rows_);
+        assert(other.rows() == this->rows());
+        assert(other.columns() == this->rows());
 
-        matrix_wrapper result{other.rows_, other.columns_};
+        matrix_wrapper result{other.rows(), other.columns()};
 
-        for (std::size_t row{0}; row < this->rows_; ++row) {
-            for (std::size_t column{0}; column < this->columns_; ++column) {
+        for (std::size_t row{0}; row < this->rows(); ++row) {
+            for (std::size_t column{0}; column < this->columns(); ++column) {
                 result.data_[row][column] = this->data_[row][column] + other.data_[row][column];
             }
         }
@@ -239,13 +243,13 @@ public:
     constexpr matrix_wrapper operator-(const matrix_wrapper& other) const noexcept
     {
         // assert correct dimensions
-        assert(other.rows_ == this->rows_);
-        assert(other.columns_ == this->rows_);
+        assert(other.rows() == this->rows());
+        assert(other.columns() == this->rows());
 
-        matrix_wrapper result{other.rows_, other.columns_};
+        matrix_wrapper result{other.rows(), other.columns()};
 
-        for (std::size_t row{0}; row < this->rows_; ++row) {
-            for (std::size_t column{0}; column < this->columns_; ++column) {
+        for (std::size_t row{0}; row < this->rows(); ++row) {
+            for (std::size_t column{0}; column < this->columns(); ++column) {
                 result.data_[row][column] = this->data_[row][column] - other.data_[row][column];
             }
         }
@@ -260,7 +264,7 @@ public:
         }
         // factor is 0 then return matrix of zeros
         else if (factor == 0) {
-            return zeros(matrix.rows_, matrix.columns_);
+            return zeros(matrix.rows(), matrix.columns());
         }
         return matrix_wrapper{scale(matrix.data_, factor)};
     }
@@ -273,7 +277,7 @@ public:
         }
         // factor is 0 then return matrix of zeros
         else if (factor == 0) {
-            return zeros(this->rows_, this->columns_);
+            return zeros(this->rows(), this->columns());
         }
         return matrix_wrapper{scale(this->data_, factor)};
     }
@@ -295,7 +299,7 @@ public:
     constexpr matrix_wrapper operator*(const matrix_wrapper& other) const
     {
         // assert correct dimensions
-        assert(this->columns_ == other.rows_);
+        assert(this->columns() == other.rows());
 
         if (auto expected_product{product(this->data_, other.data_)}; expected_product.has_value()) {
             return matrix_wrapper{std::move(expected_product).value()};
@@ -309,7 +313,7 @@ public:
     constexpr matrix_wrapper operator/(const matrix_wrapper& other) const
     {
         // assert correct dimensions
-        assert(this->columns_ == other.rows_);
+        assert(this->columns() == other.rows());
 
         // division is multiplication by inverse
         if (auto expected_inverse{inverse(other.data_)}; expected_inverse.has_value()) {
@@ -372,48 +376,48 @@ public:
     constexpr void data(matrix&& data) noexcept
     {
         this->data_ = std::forward<matrix>(data);
-        this->rows_ = data.size();
-        this->columns_ = data[0].size();
+        this->rows() = data.size();
+        this->columns() = data[0].size();
     }
 
     constexpr void data(const matrix& data)
     {
         this->data_ = data;
-        this->rows_ = data.size();
-        this->columns_ = data[0].size();
+        this->rows() = data.size();
+        this->columns() = data[0].size();
     }
 
     constexpr void append_row(const std::size_t row, const vector& new_row)
     {
-        assert(new_row.size() == this->columns_);
+        assert(new_row.size() == this->columns());
         this->data_.insert(std::next(this->data_.begin(), row), new_row); // basic pointer math (iterators are pointers)
-        ++this->rows_;
+        ++this->rows();
     }
 
     constexpr void append_column(const std::size_t column, const vector& new_column)
     {
-        assert(new_column.size() == this->rows_);
-        for (std::size_t row{0}; row < this->rows_; ++row) {
+        assert(new_column.size() == this->rows());
+        for (std::size_t row{0}; row < this->rows(); ++row) {
             this->data_[row].insert(std::next(this->data_[row].begin(), column),
                                     new_column[row]); // basic pointer math (iterators are pointers)
         }
-        ++this->columns_;
+        ++this->columns();
     }
 
     constexpr void delete_row(const std::size_t row)
     {
-        assert(row <= this->rows_);
+        assert(row <= this->rows());
         this->data_.erase(std::next(this->data_.begin(), row));
-        --this->rows_;
+        --this->rows();
     }
 
     constexpr void delete_column(const std::size_t column)
     {
-        assert(column <= this->columns_);
-        for (std::size_t row{0}; row < this->rows_; ++row) {
+        assert(column <= this->columns());
+        for (std::size_t row{0}; row < this->rows(); ++row) {
             this->data_[row].erase(std::next(this->data_[row].begin(), column));
         }
-        --this->columns_;
+        --this->columns();
     }
 
     constexpr vector end_row() const noexcept
@@ -429,8 +433,8 @@ public:
     constexpr vector end_column() const
     {
         vector end_column{};
-        end_column.reserve(this->rows_);
-        for (std::size_t row{0}; row < this->rows_; ++row) {
+        end_column.reserve(this->rows());
+        for (std::size_t row{0}; row < this->rows(); ++row) {
             end_column.push_back(data_[row].back());
         }
         return end_column;
@@ -439,8 +443,8 @@ public:
     constexpr vector begin_column() const
     {
         vector begin_column{};
-        begin_column.reserve(this->rows_);
-        for (std::size_t row{0}; row < this->rows_; ++row) {
+        begin_column.reserve(this->rows());
+        for (std::size_t row{0}; row < this->rows(); ++row) {
             begin_column.push_back(data_[row].front());
         }
         return begin_column;
@@ -448,21 +452,21 @@ public:
 
     constexpr void reserve(const std::size_t new_rows, const std::size_t new_columns)
     {
-        this->rows_ = new_rows;
-        this->columns_ = new_columns;
-        this->data_.reserve(this->rows_);
+        this->rows() = new_rows;
+        this->columns() = new_columns;
+        this->data_.reserve(this->rows());
         for (auto& row : this->data_) {
-            row.resever(this->columns_);
+            row.resever(this->columns());
         }
     }
 
     constexpr void resize(const std::size_t new_rows, const std::size_t new_columns)
     {
-        this->rows_ = new_rows;
-        this->columns_ = new_columns;
-        this->data_.resize(this->rows_);
+        this->rows() = new_rows;
+        this->columns() = new_columns;
+        this->data_.resize(this->rows());
         for (auto& row : this->data_) {
-            row.resize(this->columns_);
+            row.resize(this->columns());
         }
     }
 
@@ -478,27 +482,32 @@ public:
 
     [[nodiscard]] constexpr bool empty() const noexcept
     {
-        return this->rows_ == this->columns_ == 0;
+        return this->rows() == this->columns() == 0;
+    }
+
+    [[nodiscard]] constexpr bool square() const noexcept
+    {
+        return this->rows() == this->columns();
     }
 
     [[nodiscard]] constexpr std::size_t rows() const noexcept
     {
-        return this->rows_;
+        return this->data_.size();
     }
 
     [[nodiscard]] constexpr std::size_t columns() const noexcept
     {
-        return this->columns_;
+        return this->data_[0].size();
     }
 
     constexpr vector diagonale() const
     {
-        assert(this->rows_ == this->columns_);
+        assert(this->rows() == this->columns());
 
         vector diagonale{};
-        diagonale.reserve(this->rows_);
+        diagonale.reserve(this->rows());
 
-        for (std::size_t diag{0}; diag < this->rows_; ++diag) {
+        for (std::size_t diag{0}; diag < this->rows(); ++diag) {
             diagonale.push_back(this->data_[diag][diag]);
         }
         return diagonale;
@@ -509,7 +518,7 @@ public:
         this->data_ = transposition(this->data_);
 
         // swap dimensions
-        std::swap(this->rows_, this->columns_);
+        std::swap(this->rows(), this->columns());
     }
 
     constexpr void invert() noexcept
@@ -531,7 +540,7 @@ private:
         for (std::size_t row{0}; row < rows; ++row) {
             auto& column{matrix.emplace_back()};
             column.reserve(columns);
-            for (std::size_t column_{0}; column_ < columns; ++column_) {
+            for (std::size_t col{0}; col < columns; ++col) {
                 column.emplace_back();
             }
         }
@@ -545,7 +554,7 @@ private:
         for (std::size_t row{0}; row < rows; ++row) {
             auto& column{matrix.emplace_back()};
             column.reserve(columns);
-            for (std::size_t column_{0}; column_ < columns; ++column_) {
+            for (std::size_t col{0}; col < columns; ++col) {
                 column.push_back(value);
             }
         }
@@ -855,9 +864,9 @@ private:
                 // summation for diagonals
                 if (column == row) {
                     for (std::size_t iSumCol{0}; iSumCol < column; ++iSumCol) {
-                        sum += pow(lower_triangular[column][iSumCol], 2);
+                        sum += std::pow(lower_triangular[column][iSumCol], 2);
                     }
-                    lower_triangular[column][column] = sqrt(data[column][column] - sum);
+                    lower_triangular[column][column] = std::sqrt(data[column][column] - sum);
                 }
                 else {
                     // evaluating L(row, column) using L(column, column)
@@ -922,10 +931,6 @@ private:
         }
         return scale;
     }
-
-    std::size_t rows_{}; // first dim
-
-    std::size_t columns_{}; // second dim
 
     matrix data_{}; // vector of vectors
 };
