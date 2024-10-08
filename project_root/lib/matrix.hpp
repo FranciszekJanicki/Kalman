@@ -4,36 +4,12 @@
 #include <cassert>
 #include <cmath>
 #include <compare>
+#include <cstdio>
 #include <expected>
-#include <print>
 #include <utility>
 #include <vector>
 
 namespace {
-    enum class matrix_error {
-        wrong_dims,
-        singularity,
-        bad_alloc,
-    };
-
-    constexpr auto matrix_error_to_string(const matrix_error error) noexcept
-    {
-        switch (error) {
-            case matrix_error::wrong_dims:
-                return "Wrong dims";
-            case matrix_error::singularity:
-                return "Singularity";
-            case matrix_error::bad_alloc:
-                return "Bad alloc";
-            default:
-                return "None";
-        }
-    }
-
-    [[maybe_unused]] constexpr void print_matrix_error(const matrix_error error) noexcept
-    {
-        std::print("%s", matrix_error_to_string(error));
-    }
 
 }; // namespace
 
@@ -41,6 +17,7 @@ template <typename value_type>
 class matrix_wrapper {
 public:
     using vector = std::vector<value_type>;
+
     using matrix = std::vector<std::vector<value_type>>;
 
     struct diagonal_t {
@@ -191,8 +168,6 @@ public:
 
         if (auto expected_product{product(this->data_, other.data_)}; expected_product.has_value()) {
             this->data_ = std::move(expected_product).value();
-            // this->rows() = this->rows();
-            this->columns() = other.columns();
             return *this;
         }
         else {
@@ -210,7 +185,6 @@ public:
         if (auto expected_inverse{inverse(other.data_)}; expected_inverse.has_value()) {
             if (auto expected_product{product(this->data_, expected_inverse.value())}; expected_product.has_value()) {
                 *this = std::move(expected_product).value();
-                this->columns() = other.columns();
                 return *this;
             }
             else {
@@ -376,22 +350,22 @@ public:
     constexpr void data(matrix&& data) noexcept
     {
         this->data_ = std::forward<matrix>(data);
-        this->rows() = data.size();
-        this->columns() = data[0].size();
     }
 
     constexpr void data(const matrix& data)
     {
         this->data_ = data;
-        this->rows() = data.size();
-        this->columns() = data[0].size();
+    }
+
+    constexpr void swap(matrix_wrapper& other)
+    {
+        std::swap(this->data_, other.data_);
     }
 
     constexpr void append_row(const std::size_t row, const vector& new_row)
     {
         assert(new_row.size() == this->columns());
         this->data_.insert(std::next(this->data_.begin(), row), new_row); // basic pointer math (iterators are pointers)
-        ++this->rows();
     }
 
     constexpr void append_column(const std::size_t column, const vector& new_column)
@@ -401,14 +375,12 @@ public:
             this->data_[row].insert(std::next(this->data_[row].begin(), column),
                                     new_column[row]); // basic pointer math (iterators are pointers)
         }
-        ++this->columns();
     }
 
     constexpr void delete_row(const std::size_t row)
     {
         assert(row <= this->rows());
         this->data_.erase(std::next(this->data_.begin(), row));
-        --this->rows();
     }
 
     constexpr void delete_column(const std::size_t column)
@@ -417,7 +389,6 @@ public:
         for (std::size_t row{0}; row < this->rows(); ++row) {
             this->data_[row].erase(std::next(this->data_[row].begin(), column));
         }
-        --this->columns();
     }
 
     constexpr vector end_row() const noexcept
@@ -433,9 +404,9 @@ public:
     constexpr vector end_column() const
     {
         vector end_column{};
-        end_column.reserve(this->rows());
+        end_column.reserve(this->columns());
         for (std::size_t row{0}; row < this->rows(); ++row) {
-            end_column.push_back(data_[row].back());
+            end_column.push_back(this->data_[row].back());
         }
         return end_column;
     }
@@ -443,30 +414,26 @@ public:
     constexpr vector begin_column() const
     {
         vector begin_column{};
-        begin_column.reserve(this->rows());
+        begin_column.reserve(this->columns());
         for (std::size_t row{0}; row < this->rows(); ++row) {
-            begin_column.push_back(data_[row].front());
+            begin_column.push_back(this->data_[row].front());
         }
         return begin_column;
     }
 
     constexpr void reserve(const std::size_t new_rows, const std::size_t new_columns)
     {
-        this->rows() = new_rows;
-        this->columns() = new_columns;
-        this->data_.reserve(this->rows());
+        this->data_.reserve(new_rows);
         for (auto& row : this->data_) {
-            row.resever(this->columns());
+            row.resever(new_columns);
         }
     }
 
     constexpr void resize(const std::size_t new_rows, const std::size_t new_columns)
     {
-        this->rows() = new_rows;
-        this->columns() = new_columns;
-        this->data_.resize(this->rows());
+        this->data_.resize(new_rows);
         for (auto& row : this->data_) {
-            row.resize(this->columns());
+            row.resize(new_columns);
         }
     }
 
@@ -516,9 +483,6 @@ public:
     constexpr void transpose() noexcept
     {
         this->data_ = transposition(this->data_);
-
-        // swap dimensions
-        std::swap(this->rows(), this->columns());
     }
 
     constexpr void invert() noexcept
@@ -533,6 +497,31 @@ public:
     }
 
 private:
+    enum class matrix_error {
+        wrong_dims,
+        singularity,
+        bad_alloc,
+    };
+
+    static constexpr auto matrix_error_to_string(const matrix_error error) noexcept
+    {
+        switch (error) {
+            case matrix_error::wrong_dims:
+                return "Wrong dims";
+            case matrix_error::singularity:
+                return "Singularity";
+            case matrix_error::bad_alloc:
+                return "Bad alloc";
+            default:
+                return "None";
+        }
+    }
+
+    static constexpr void print_matrix_error(const matrix_error error) noexcept
+    {
+        printf("%s", matrix_error_to_string(error));
+    }
+
     static constexpr matrix make_matrix(const std::size_t rows, const std::size_t columns)
     {
         matrix matrix{};
@@ -936,3 +925,7 @@ private:
 };
 
 #endif // MATRIX_HPP
+
+int main()
+{
+}

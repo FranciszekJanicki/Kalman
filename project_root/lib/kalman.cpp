@@ -1,11 +1,6 @@
 #include "kalman.hpp"
-#include <print>
+#include <cstdio>
 #include <utility>
-
-static constexpr void std::print(const char* info) noexcept
-{
-    std::print(info);
-}
 
 kalman::kalman(const filter_model& filter, const measure_model& measure) :
 
@@ -25,7 +20,7 @@ kalman::kalman(const filter_model& filter, const measure_model& measure) :
     S_{measure.S},
     K_{measure.K}
 {
-    std::print("Initialized");
+    printf("Initialized");
     assert(filter.states == measure.states);
     is_initialized_ = true;
 }
@@ -47,7 +42,7 @@ kalman::kalman(filter_model&& filter, measure_model&& measure) :
     S_{std::move(measure.S)},
     K_{std::move(measure.K)}
 {
-    std::print("Initialized");
+    printf("Initialized");
     assert(filter.states == measure.states);
     is_initialized_ = true;
 }
@@ -85,7 +80,7 @@ void kalman::inputs(matrix_wrapper<float>&& inputs) noexcept
 void kalman::predict() noexcept
 {
     if (!is_initialized_) {
-        std::print("Filter unitialized!");
+        printf("Filter unitialized!");
         return;
     }
 
@@ -111,7 +106,7 @@ void kalman::predict() noexcept
 void kalman::update() noexcept
 {
     if (!is_initialized_) {
-        std::print("Filter unitialized!");
+        printf("Filter unitialized!");
         return;
     }
 
