@@ -80,37 +80,37 @@ private:
     // filter model
     size_t inputs_{1}; // number of filter inputs
 
-    matrix_wrapper<float> A_{states_, inputs_}; // state transition matrix (states_ x inputs_)
+    matrix_wrapper<float> A_{}; // state transition matrix (states_ x inputs_)
 
-    matrix_wrapper<float> B_{states_, inputs_}; // input transition matrix (states_ x inputs_)
+    matrix_wrapper<float> B_{}; // input transition matrix (states_ x inputs_)
 
-    matrix_wrapper<float> u_{inputs_, 1}; // input vector (inputs_ x 1)
+    matrix_wrapper<float> u_{}; // input vector (inputs_ x 1)
 
-    matrix_wrapper<float> P_{states_, states_}; // state covariance matrix (states_ x states_)
+    matrix_wrapper<float> P_{}; // state covariance matrix (states_ x states_)
 
-    matrix_wrapper<float> Q_{inputs_, inputs_}; // input covariance matrix (inputs_ x inputs_)
+    matrix_wrapper<float> Q_{}; // input covariance matrix (inputs_ x inputs_)
 
-    matrix_wrapper<float> x_{states_, 1}; // state vector (states_ x 1)
+    matrix_wrapper<float> x_{}; // state vector (states_ x 1)
 
-    matrix_wrapper<float> xP_{states_, 1}; // predicted state vector (states_ x 1)
+    matrix_wrapper<float> xP_{}; // predicted state vector (states_ x 1)
 
     ///////////////////////////////////////////////////
 
     // measurement model
     size_t measurements_{1}; // number of measerements performed
 
-    matrix_wrapper<float> H_{measurements_, states_}; // measurement transformation matrix (measurements_ x states_)
+    matrix_wrapper<float> H_{}; // measurement transformation matrix (measurements_ x states_)
 
-    matrix_wrapper<float> z_{measurements_, 1}; // measurement vector (measurements_ x  1)
+    matrix_wrapper<float> z_{}; // measurement vector (measurements_ x  1)
 
-    matrix_wrapper<float> R_{measurements_, measurements_}; // process noise (measurement uncertainty)
-                                                            // (measurements_ x measurements_)
+    matrix_wrapper<float> R_{}; // process noise (measurement uncertainty)
+                                // (measurements_ x measurements_)
 
-    matrix_wrapper<float> y_{measurements_, 1}; // innovation vector (measurements_ x 1)
+    matrix_wrapper<float> y_{}; // innovation vector (measurements_ x 1)
 
-    matrix_wrapper<float> S_{measurements_, measurements_}; // residual covariance (measurements_ x measurements_)
+    matrix_wrapper<float> S_{}; // residual covariance (measurements_ x measurements_)
 
-    matrix_wrapper<float> K_{states_, measurements_}; // kalman gain (states_ x measurements_)
+    matrix_wrapper<float> K_{}; // kalman gain (states_ x measurements_)
 
     ///////////////////////////////////////////////////
 

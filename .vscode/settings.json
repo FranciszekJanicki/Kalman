@@ -72,6 +72,8 @@
         "alignedvector3": "cpp",
         "fft": "cpp",
         "cassert": "cpp",
-        "matrixfunctions": "cpp"
-    }
+        "matrixfunctions": "cpp",
+        "span": "cpp"
+    },
+    "C_Cpp.errorSquiggles": "disabled"
 }

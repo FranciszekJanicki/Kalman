@@ -6,21 +6,21 @@ kalman::kalman(const filter_model& filter, const measure_model& measure) :
 
     states_{filter.inputs},
     inputs_{filter.inputs},
-    A_{filter.A},
-    B_{filter.B},
-    u_{filter.u},
-    P_{filter.P},
-    Q_{filter.Q},
-    x_{filter.x},
+    A_(filter.A),
+    B_(filter.B),
+    u_(filter.u),
+    P_(filter.P),
+    Q_(filter.Q),
+    x_(filter.x),
     measurements_{measure.measurements},
-    H_{measure.H},
-    z_{measure.z},
-    R_{measure.R},
-    y_{measure.z},
-    S_{measure.S},
-    K_{measure.K}
+    H_(measure.H),
+    z_(measure.z),
+    R_(measure.R),
+    y_(measure.z),
+    S_(measure.S),
+    K_(measure.K)
 {
-    printf("Initialized");
+    puts("Initialized");
     assert(filter.states == measure.states);
     is_initialized_ = true;
 }
@@ -28,21 +28,21 @@ kalman::kalman(const filter_model& filter, const measure_model& measure) :
 kalman::kalman(filter_model&& filter, measure_model&& measure) :
     states_{filter.inputs},
     inputs_{filter.inputs},
-    A_{std::move(filter.A)},
-    B_{std::move(filter.B)},
-    u_{std::move(filter.u)},
-    P_{std::move(filter.P)},
-    Q_{std::move(filter.Q)},
-    x_{std::move(filter.x)},
+    A_(std::move(filter.A)),
+    B_(std::move(filter.B)),
+    u_(std::move(filter.u)),
+    P_(std::move(filter.P)),
+    Q_(std::move(filter.Q)),
+    x_(std::move(filter.x)),
     measurements_{measure.measurements},
-    H_{std::move(measure.H)},
-    z_{std::move(measure.z)},
-    R_{std::move(measure.R)},
-    y_{std::move(measure.z)},
-    S_{std::move(measure.S)},
-    K_{std::move(measure.K)}
+    H_(std::move(measure.H)),
+    z_(std::move(measure.z)),
+    R_(std::move(measure.R)),
+    y_(std::move(measure.z)),
+    S_(std::move(measure.S)),
+    K_(std::move(measure.K))
 {
-    printf("Initialized");
+    puts("Initialized");
     assert(filter.states == measure.states);
     is_initialized_ = true;
 }
@@ -80,7 +80,7 @@ void kalman::inputs(matrix_wrapper<float>&& inputs) noexcept
 void kalman::predict() noexcept
 {
     if (!is_initialized_) {
-        printf("Filter unitialized!");
+        puts("Filter unitialized!");
         return;
     }
 
@@ -106,7 +106,7 @@ void kalman::predict() noexcept
 void kalman::update() noexcept
 {
     if (!is_initialized_) {
-        printf("Filter unitialized!");
+        puts("Filter unitialized!");
         return;
     }
 
