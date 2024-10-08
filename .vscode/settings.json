@@ -71,6 +71,7 @@
         "*.expression": "cpp",
         "alignedvector3": "cpp",
         "fft": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "matrixfunctions": "cpp"
     }
 }

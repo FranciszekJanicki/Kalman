@@ -16,7 +16,7 @@ namespace {
         bad_alloc,
     };
 
-    static constexpr auto matrix_error_to_string(const matrix_error error) noexcept
+    constexpr auto matrix_error_to_string(const matrix_error error) noexcept
     {
         switch (error) {
             case matrix_error::wrong_dims:
@@ -30,913 +30,892 @@ namespace {
         }
     }
 
-    static constexpr void LOG(const matrix_error error) noexcept
+    constexpr void log(const matrix_error error) noexcept
     {
         puts(matrix_error_to_string(error));
     }
 
+    struct diagonal_t {
+        explicit diagonal_t() = default;
+    };
+    constexpr diagonal_t diagonal_tag{};
 }; // namespace
-
 template <typename value_type>
 class matrix_wrapper {
-private:
-    typedef typename std::vector<value_type> vector;
-
-    typedef typename std::vector<std::vector<value_type>> matrix;
-
 public:
+    using vector = std::vector<value_type>;
+    using matrix = std::vector<std::vector<value_type>>;
+
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> diagonal(const std::size_t matrix_dims,
+                                                                       const value_type value)
+    {
+        return matrix_wrapper<value_type>{diagonal_tag, matrix_dims, value};
+    }
+
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> eye(const std::size_t matrix_dims)
+    {
+        return matrix_wrapper<value_type>{diagonal_tag, matrix_dims, value_type{1}};
+    }
+
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> ones(const std::size_t matrix_dims)
+    {
+        return matrix_wrapper<value_type>{matrix_dims, matrix_dims, value_type{1}};
+    }
+
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> zeros(const std::size_t matrix_dims)
+    {
+        return matrix_wrapper<value_type>{matrix_dims, matrix_dims};
+    }
+
     constexpr matrix_wrapper() noexcept = default;
 
-    explicit constexpr matrix_wrapper(const std::size_t rows, const std::size_t cols); // 0
+    constexpr matrix_wrapper(const std::size_t rows, const std::size_t columns) :
+        rows_{rows}, columns_{columns}, data_{make_matrix(rows, columns)}
+    {
+    }
 
-    explicit constexpr matrix_wrapper(const matrix& data); // 1
+    constexpr matrix_wrapper(const std::size_t rows, const std::size_t columns, const value_type value) :
+        rows_{rows}, columns_{columns}, data_{make_matrix(rows, columns, value)}
+    {
+    }
 
-    explicit constexpr matrix_wrapper(matrix&& data) noexcept; // 2
+    constexpr matrix_wrapper([[maybe_unused]] const diagonal_t diagonal_tag,
+                             const std::size_t matrix_dims,
+                             const value_type value) :
+        rows_{matrix_dims}, columns_{matrix_dims}, data_{make_diagonal(matrix_dims, value)}
+    {
+    }
 
-    explicit constexpr matrix_wrapper(const vector& diag); // 3
+    explicit constexpr matrix_wrapper(matrix&& data) noexcept :
+        rows_{data.size()}, columns_{data[0].size()}, data_{std::forward<matrix>(data)}
+    {
+    }
 
-    constexpr void transpose();
+    explicit constexpr matrix_wrapper(const matrix& data) : rows_{data.size()}, columns_{data[0].size()}, data_{data}
+    {
+    }
 
-    constexpr void invert();
+    constexpr matrix_wrapper(const matrix_wrapper& other) = default;
 
-    constexpr void append_row(const std::size_t row, const vector& new_row);
+    constexpr matrix_wrapper(matrix_wrapper&& other) noexcept = default;
 
-    constexpr void append_column(const std::size_t column, const vector& new_column);
+    constexpr ~matrix_wrapper() noexcept = default;
 
-    constexpr void delete_row(const std::size_t row);
+    constexpr matrix_wrapper& operator=(const matrix_wrapper& other) = default;
 
-    constexpr void delete_column(const std::size_t column);
+    constexpr matrix_wrapper& operator=(matrix_wrapper&& other) noexcept = default;
 
-    constexpr void resize(const std::size_t new_rows, const std::size_t new_cols);
+    constexpr void operator=(matrix&& data) noexcept
+    {
+        this->data_ = std::forward<matrix>(data);
+        this->rows_ = data.size();
+        this->columns_ = data[0].size();
+    }
 
-    constexpr void clear() noexcept;
+    constexpr void operator=(const matrix& data)
+    {
+        this->data_ = data;
+        this->rows_ = data.size();
+        this->columns_ = data[0].size();
+    }
 
-    [[nodiscard]] constexpr bool empty() const noexcept;
+    constexpr matrix_wrapper& operator+=(const matrix_wrapper& other) noexcept
+    {
+        // assert correct dimensions
+        assert(other.rows_ == this->rows_);
+        assert(other.columns_ == this->rows_);
 
-    [[nodiscard]] constexpr std::size_t rows() const noexcept;
+        for (std::size_t row{0}; row < this->rows_; ++row) {
+            for (std::size_t column{0}; column < this->columns_; ++column) {
+                this->data_[row][column] += other.data_[row][column];
+            }
+        }
+        return *this;
+    }
 
-    [[nodiscard]] constexpr std::size_t columns() const noexcept;
+    constexpr matrix_wrapper& operator-=(const matrix_wrapper& other) noexcept
+    {
+        // assert correct dimensions
+        assert(other.rows_ == this->rows_);
+        assert(other.columns_ == this->rows_);
 
-    [[nodiscard]] constexpr vector end_row() const;
+        for (std::size_t row{0}; row < this->rows_; ++row) {
+            for (std::size_t column{0}; column < this->columns_; ++column) {
+                this->data_[row][column] -= other.data_[row][column];
+            }
+        }
+        return *this;
+    }
 
-    [[nodiscard]] constexpr vector begin_row() const;
+    constexpr matrix_wrapper& operator*=(const value_type& factor) noexcept
+    {
+        // factor is 1 then dont need to do anything
+        if (factor == 1) {
+            return *this;
+        }
+        // factor is 0 then return zero-ed this
+        else if (factor == 0) {
+            this->clear();
+            return *this;
+        }
 
-    [[nodiscard]] constexpr vector end_column() const;
+        this->data_ = scale(this->data_, factor);
+        return *this;
+    }
 
-    [[nodiscard]] constexpr vector begin_column() const;
+    constexpr matrix_wrapper& operator/=(const value_type& factor) noexcept
+    {
+        // assert no division by 0!!!
+        assert(factor != 0);
 
-    [[nodiscard]] constexpr vector diagonale() const;
+        // factor is 1 then dont need to do anything
+        if (factor == 1) {
+            return *this;
+        }
 
-    [[nodiscard]] constexpr const matrix& data() const& noexcept;
+        // division is multiplication by inverse
+        this->data_ = scale(this->data_, 1 / factor);
+        return *this;
+    }
 
-    [[nodiscard]] constexpr matrix&& data() && noexcept;
+    constexpr matrix_wrapper& operator*=(const matrix_wrapper& other) noexcept
+    {
+        // assert correct dimensions
+        assert(this->columns_ == other.rows_);
 
-    constexpr matrix_wrapper operator*(const value_type& factor) const;
+        this->data_ = product(this->data_, other.data_);
+        // this->rows_ = this->rows_;
+        this->columns_ = other.columns_;
+        return *this;
+    }
 
-    constexpr matrix_wrapper operator/(const value_type& factor) const;
+    constexpr matrix_wrapper& operator/=(const matrix_wrapper& other) noexcept
+    {
+        // assert correct dimensions
+        assert(this->columns_ == other.rows_);
 
-    constexpr matrix_wrapper operator+(const matrix_wrapper& other) const;
+        // division is multiplication by inverse
+        if (auto inverse_value{inverse(other.data_)}; inverse_value.has_value()) {
+            if (auto product_value{product(this->data_, inverse_value.value())}; product_value.has_value()) {
+                *this = std::move(product_value).value();
+                this->columns_ = other.columns_;
+                return *this;
+            }
+            else {
+                log(product_value.error());
+                std::unreachable();
+            }
+        }
+        else {
+            log(inverse_value.error());
+            std::unreachable();
+        }
+    }
 
-    constexpr matrix_wrapper operator-(const matrix_wrapper& other) const;
+    constexpr matrix_wrapper operator+(const matrix_wrapper& other) const noexcept
+    {
+        // assert correct dimensions
+        assert(other.rows_ == this->rows_);
+        assert(other.columns_ == this->rows_);
 
-    constexpr matrix_wrapper operator*(const matrix_wrapper& other) const;
+        matrix_wrapper result{other.rows_, other.columns_};
 
-    constexpr matrix_wrapper operator/(const matrix_wrapper& other) const;
+        for (std::size_t row{0}; row < this->rows_; ++row) {
+            for (std::size_t column{0}; column < this->columns_; ++column) {
+                result.data_[row][column] = this->data_[row][column] + other.data_[row][column];
+            }
+        }
+        return result;
+    }
 
-    constexpr matrix_wrapper& operator*=(const value_type& factor);
+    constexpr matrix_wrapper operator-(const matrix_wrapper& other) const noexcept
+    {
+        // assert correct dimensions
+        assert(other.rows_ == this->rows_);
+        assert(other.columns_ == this->rows_);
 
-    constexpr matrix_wrapper& operator/=(const value_type& factor);
+        matrix_wrapper result{other.rows_, other.columns_};
 
-    constexpr matrix_wrapper& operator+=(const matrix_wrapper& other);
+        for (std::size_t row{0}; row < this->rows_; ++row) {
+            for (std::size_t column{0}; column < this->columns_; ++column) {
+                result.data_[row][column] = this->data_[row][column] - other.data_[row][column];
+            }
+        }
+        return result;
+    }
 
-    constexpr matrix_wrapper& operator-=(const matrix_wrapper& other);
+    friend constexpr matrix_wrapper operator*(const value_type& factor, const matrix_wrapper& matrix)
+    {
+        // factor is 1 then dont need to do anything
+        if (factor == 1) {
+            return matrix;
+        }
+        // factor is 0 then return matrix of zeros
+        else if (factor == 0) {
+            return zeros(matrix.rows_, matrix.columns_);
+        }
+        return matrix_wrapper{scale(matrix.data_, factor)};
+    }
 
-    constexpr matrix_wrapper& operator*=(const matrix_wrapper& other);
+    constexpr matrix_wrapper operator*(const value_type& factor) const
+    {
+        // factor is 1 then dont need to do anything
+        if (factor == 1) {
+            return *this;
+        }
+        // factor is 0 then return matrix of zeros
+        else if (factor == 0) {
+            return zeros(this->rows_, this->columns_);
+        }
+        return matrix_wrapper{scale(this->data_, factor)};
+    }
 
-    constexpr matrix_wrapper& operator/=(const matrix_wrapper& other);
+    constexpr matrix_wrapper operator/(const value_type& factor) const noexcept
+    {
+        // assert no division by 0!!!
+        assert(factor != 0);
 
-    constexpr void operator=(matrix&& data) noexcept;
+        // factor is 1 then dont need to do anything
+        if (factor == 1) {
+            return *this;
+        }
 
-    constexpr void operator=(const matrix& data) noexcept;
+        // division is multiplication by inverse
+        return matrix_wrapper{scale(this->data_, 1 / factor)};
+    }
 
-    [[nodiscard]] constexpr vector
+    constexpr matrix_wrapper operator*(const matrix_wrapper& other) const
+    {
+        // assert correct dimensions
+        assert(this->columns_ == other.rows_);
 
-    operator()(const std::size_t row) const noexcept;
+        return matrix_wrapper{product(this->data_, other.data_)};
+    }
 
-    [[nodiscard]] constexpr value_type operator()(const std::size_t row, const std::size_t column) const noexcept;
+    constexpr matrix_wrapper operator/(const matrix_wrapper& other) const
+    {
+        // assert correct dimensions
+        assert(this->columns_ == other.rows_);
+
+        // division is multiplication by inverse
+        if (auto inverse_value{inverse(other.data_)}; inverse_value.has_value()) {
+            if (auto product_value{product(this->data_, inverse_value.value())}; product_value.has_value()) {
+                return matrix_wrapper{std::move(product_value).value()};
+            }
+            else {
+                log(product_value.error());
+                std::unreachable();
+            }
+        }
+        else {
+            log(inverse_value.error());
+            std::unreachable();
+        }
+    }
+
+    explicit constexpr operator matrix() && noexcept
+    {
+        return std::move(data_);
+    }
+
+    explicit constexpr operator matrix() const& noexcept
+    {
+        return data_;
+    }
+
+    [[nodiscard]] constexpr const vector& operator[](const std::size_t row) const noexcept
+    {
+        return this->data_[row];
+    }
+
+    [[nodiscard]] constexpr vector& operator[](const std::size_t row) noexcept
+    {
+        return this->data_[row];
+    }
+
+    [[nodiscard]] constexpr value_type& operator[](const std::size_t row, const std::size_t column) noexcept
+    {
+        return this->data_[row][column];
+    }
+
+    [[nodiscard]] constexpr const value_type& operator[](const std::size_t row, const std::size_t column) const noexcept
+    {
+        return this->data_[row][column];
+    }
 
     [[nodiscard]] constexpr bool operator<=>(const matrix_wrapper& other) const noexcept = default;
 
+    [[nodiscard]] constexpr const matrix& data() const& noexcept
+    {
+        return this->data_;
+    }
+
+    [[nodiscard]] constexpr matrix&& data() noexcept
+    {
+        std::move(this->data_);
+    }
+
+    constexpr void data(matrix&& data) noexcept
+    {
+        this->data_ = std::forward<matrix>(data);
+        this->rows_ = data.size();
+        this->columns_ = data[0].size();
+    }
+
+    constexpr void data(const matrix& data)
+    {
+        this->data_ = data;
+        this->rows_ = data.size();
+        this->columns_ = data[0].size();
+    }
+
+    constexpr void append_row(const std::size_t row, const vector& new_row)
+    {
+        assert(new_row.size() == this->columns_);
+        this->data_.insert(std::next(this->data_.begin(), row), new_row); // basic pointer math (iterators are pointers)
+        ++this->rows_;
+    }
+
+    constexpr void append_column(const std::size_t column, const vector& new_column)
+    {
+        assert(new_column.size() == this->rows_);
+        for (std::size_t row{0}; row < this->rows_; ++row) {
+            this->data_[row].insert(std::next(this->data_[row].begin(), column),
+                                    new_column[row]); // basic pointer math (iterators are pointers)
+        }
+        ++this->columns_;
+    }
+
+    constexpr void delete_row(const std::size_t row)
+    {
+        assert(row <= this->rows_);
+        this->data_.erase(std::next(this->data_.begin(), row));
+        --this->rows_;
+    }
+
+    constexpr void delete_column(const std::size_t column)
+    {
+        assert(column <= this->columns_);
+        for (std::size_t row{0}; row < this->rows_; ++row) {
+            this->data_[row].erase(std::next(this->data_[row].begin(), column));
+        }
+        --this->columns_;
+    }
+
+    constexpr vector end_row() const noexcept
+    {
+        return this->data_.back();
+    }
+
+    constexpr vector begin_row() const noexcept
+    {
+        return this->data_.front();
+    }
+
+    constexpr vector end_column() const
+    {
+        vector end_column{};
+        end_column.reserve(this->rows_);
+        for (std::size_t row{0}; row < this->rows_; ++row) {
+            end_column.push_back(data_[row].back());
+        }
+        return end_column;
+    }
+
+    constexpr vector begin_column() const
+    {
+        vector begin_column{};
+        begin_column.reserve(this->rows_);
+        for (std::size_t row{0}; row < this->rows_; ++row) {
+            begin_column.push_back(data_[row].front());
+        }
+        return begin_column;
+    }
+
+    constexpr void reserve(const std::size_t new_rows, const std::size_t new_columns)
+    {
+        this->rows_ = new_rows;
+        this->columns_ = new_columns;
+        this->data_.reserve(this->rows_);
+        for (auto& row : this->data_) {
+            row.resever(this->columns_);
+        }
+    }
+
+    constexpr void resize(const std::size_t new_rows, const std::size_t new_columns)
+    {
+        this->rows_ = new_rows;
+        this->columns_ = new_columns;
+        this->data_.resize(this->rows_);
+        for (auto& row : this->data_) {
+            row.resize(this->columns_);
+        }
+    }
+
+    constexpr void erase()
+    {
+        this->data_.erase();
+    }
+
+    constexpr void clear()
+    {
+        this->data_.clear();
+    }
+
+    [[nodiscard]] constexpr bool empty() const noexcept
+    {
+        return this->rows_ == this->columns_ == 0;
+    }
+
+    [[nodiscard]] constexpr std::size_t rows() const noexcept
+    {
+        return this->rows_;
+    }
+
+    [[nodiscard]] constexpr std::size_t columns() const noexcept
+    {
+        return this->columns_;
+    }
+
+    constexpr vector diagonale() const
+    {
+        assert(this->rows_ == this->columns_);
+
+        vector diagonale{};
+        diagonale.reserve(this->rows_);
+
+        for (std::size_t diag{0}; diag < this->rows_; ++diag) {
+            diagonale.push_back(this->data_[diag][diag]);
+        }
+        return diagonale;
+    }
+
+    constexpr void transpose() noexcept
+    {
+        this->data_ = transposition(this->data_);
+
+        // swap dimensions
+        std::swap(this->rows_, this->columns_);
+    }
+
+    constexpr void invert() noexcept
+    {
+        if (auto inverse_value{inverse(this->data_)}; inverse_value.has_value()) {
+            this->data_ = std::move(inverse_value).value();
+        }
+        else {
+            log(inverse_value.error());
+            std::unreachable();
+        }
+    }
+
 private:
-    static constexpr matrix make_matrix(const std::size_t rows, const std::size_t cols);
+    static constexpr matrix make_matrix(const std::size_t rows, const std::size_t columns)
+    {
+        matrix matrix{};
+        matrix.reserve(rows);
+        for (std::size_t row{0}; row < rows; ++row) {
+            auto& column{matrix.emplace_back()};
+            column.reserve(columns);
+            for (std::size_t column_{0}; column_ < columns; ++column_) {
+                column.emplace_back();
+            }
+        }
+        return matrix;
+    }
 
-    constexpr matrix scale(const matrix& data, const value_type factor) const;
+    static constexpr matrix make_matrix(const std::size_t rows, const std::size_t columns, const value_type value)
+    {
+        matrix matrix{};
+        matrix.reserve(rows);
+        for (std::size_t row{0}; row < rows; ++row) {
+            auto& column{matrix.emplace_back()};
+            column.reserve(columns);
+            for (std::size_t column_{0}; column_ < columns; ++column_) {
+                column.push_back(value);
+            }
+        }
+        return matrix;
+    }
 
-    constexpr matrix transposition(const matrix& data) const;
+    static constexpr matrix make_diagonal(const std::size_t matrix_dims, const value_type value)
+    {
+        matrix matrix{};
+        matrix.reserve(matrix_dims);
+        for (std::size_t row{0}; row < matrix_dims; ++row) {
+            auto& column{matrix.emplace_back()};
+            column.reserve(matrix_dims);
+            for (std::size_t col{0}; col < matrix_dims; ++col) {
+                if (col == row) {
+                    column.push_back(value);
+                }
+                else {
+                    column.emplace_back();
+                }
+            }
+        }
+        return matrix;
+    }
 
-    constexpr std::expected<matrix, matrix_error> adjoint(const matrix& data) const;
+    static constexpr matrix make_vector(const std::size_t rows)
+    {
+        vector vector{};
+        vector.reserve(rows);
+        for (std::size_t row{0}; row < rows; ++row) {
+            vector.emplace_back();
+        }
+        return rows;
+    }
 
-    constexpr std::expected<matrix, matrix_error> inverse(const matrix& data) const;
+    static constexpr matrix make_vector(const std::size_t rows, const value_type value)
+    {
+        vector vector{};
+        vector.reserve(rows);
+        for (std::size_t row{0}; row < rows; ++row) {
+            vector.push_back(value);
+        }
+        return rows;
+    }
 
-    constexpr std::expected<matrix, matrix_error> lower_triangular(const matrix& data) const;
+    static constexpr std::expected<matrix, matrix_error>
+    minor(const matrix& data, const std::size_t row, const std::size_t column, const std::size_t matrix_dims)
+    {
+        const std::size_t rows{data.size()};
+        const std::size_t columns{data[0].size()};
+        // assert correct dimensions
+        assert(rows == columns);
+        if (rows != columns) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
+        // assert cofactor isnt calculated for minor bigger than data
+        assert(matrix_dims < row && matrix_dims < column);
+        if (matrix_dims >= row || matrix_dims >= column) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
+        // minor is scalar, can omit later code
+        if (matrix_dims == 0) {
+            return std::expected<matrix, matrix_error>{data};
+        }
 
-    constexpr std::expected<matrix, matrix_error> upper_triangular(const matrix& data) const;
+        matrix minor{make_matrix(matrix_dims, matrix_dims)};
+        std::size_t cof_row{0};
+        std::size_t cof_column{0};
+        for (std::size_t row_{0}; row_ < matrix_dims; ++row_) {
+            for (std::size_t column_{0}; column_ < matrix_dims; ++column_) {
+                // copying into cofactor matrix only those element which are not in given row and column
+                if (row_ != row && column_ != column) {
+                    minor[cof_row][cof_column++] = data[row_][column_];
 
-    constexpr std::expected<matrix, matrix_error> product(const matrix& left, const matrix& right) const;
+                    // row is filled, so increase row index and reset column index
+                    if (cof_column == matrix_dims - 1) {
+                        cof_column = 0;
+                        ++cof_row;
+                    }
+                }
+            }
+        }
+        return std::expected<matrix, matrix_error>{std::move(minor)};
+    }
 
-    constexpr std::expected<value_type, matrix_error> determinant(const matrix& data,
-                                                                  const std::size_t matrix_dims) const;
+    static constexpr std::expected<value_type, matrix_error> determinant(const matrix& data, std::size_t matrix_dims)
+    {
+        const std::size_t rows{data.size()};
+        const std::size_t columns{data[0].size()};
+        // assert correct dimensions
+        assert(rows == columns);
+        if (rows != columns) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
 
-    constexpr std::expected<matrix, matrix_error>
-    minor(const matrix& data, const std::size_t row, const std::size_t column, const std::size_t matrix_dims) const;
+        // assert minor isnt bigger than data
+        assert(rows > matrix_dims && columns > matrix_dims);
+        if (rows <= matrix_dims || columns <= matrix_dims) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
+
+        // data is scalar, can omit later code
+        if (matrix_dims == 1) {
+            return std::expected<value_type, matrix_error>{data[0][0]};
+        }
+        // data is 2x2 matrix, can omit later code
+        if (matrix_dims == 2) {
+            return std::expected<value_type, matrix_error>{std::in_place,
+                                                           (data[0][0] * data[1][1]) - (data[1][0] * data[0][1])};
+        }
+
+        value_type det{};
+
+        // sign multiplier
+        value_type sign{static_cast<value_type>(1)};
+        matrix minor{make_matrix(matrix_dims, matrix_dims)};
+        for (std::size_t column{0}; column < matrix_dims; ++column) {
+            // cofactor of data[0][column]
+
+            if (auto expected_minor{minor(data, 0, column, matrix_dims)}; expected_minor.has_value()) {
+                minor = std::move(expected_minor).value();
+            }
+            else {
+                log(expected_minor.error());
+                std::unreachable();
+            }
+
+            if (auto expected_det{determinant(minor, matrix_dims - 1)}; expected_det.has_value()) {
+                det += sign * data[0][column] * std::move(expected_det).value();
+            }
+            else {
+                log(expected_det.error());
+                std::unreachable();
+            }
+
+            // alternate sign
+            sign *= static_cast<value_type>(-1);
+        }
+
+        return std::expected<value_type, matrix_error>{det};
+    }
+
+    static constexpr matrix transposition(const matrix& data)
+    {
+        const std::size_t new_rows{data.size()};
+        const std::size_t new_columns{data[0].size()};
+
+        // data is scalar, can omit later code
+        if ((new_rows == new_columns) == 1)
+            return data;
+
+        matrix transposition{make_matrix(new_rows, new_columns)};
+        for (std::size_t row{0}; row < new_rows; ++row) {
+            for (std::size_t column{0}; column < new_columns; ++column) {
+                transposition[row][column] = data[column][row];
+            }
+        }
+        return transposition;
+    }
+
+    static constexpr std::expected<matrix, matrix_error> adjoint(const matrix& data)
+    {
+        const std::size_t rows{data.size()};
+        const std::size_t columns{data[0].size()};
+        // assert correct dimensions
+        assert(rows == columns);
+        if (rows != columns) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
+
+        // matrix square
+        const std::size_t matrix_dims{rows};
+        // data is scalar, can omit later code
+        if (matrix_dims == 1) {
+            return std::expected<matrix, matrix_error>{data};
+        }
+
+        matrix complement{make_matrix(matrix_dims, matrix_dims)};
+
+        // sign multiplier
+        value_type sign{static_cast<value_type>(1)};
+        matrix minor{make_matrix(matrix_dims, matrix_dims)};
+        for (std::size_t row{0}; row < matrix_dims; ++row) {
+            for (std::size_t column{0}; column < matrix_dims; column++) {
+                // get cofactor of data[row][column]
+
+                if (auto expected_minor{minor(data, row, column, matrix_dims)}; expected_minor.has_value()) {
+                    minor = std::move(expected_minor).value();
+                }
+                else {
+                    log(expected_minor.error());
+                    std::unreachable();
+                }
+
+                // sign of adj[column][row] positive if sum of row and column indexes is even
+                if ((row + column) % 2 == 0) {
+                    sign = static_cast<value_type>(1);
+                }
+                else {
+                    sign = static_cast<value_type>(-1);
+                }
+
+                // complement is matrix of determinants of minors with alternating signs!!!
+                if (auto expected_det{determinant(minor, matrix_dims - 1)}; expected_det.has_value()) {
+                    complement[row][column] = (sign)*std::move(expected_det).value();
+                }
+                else {
+                    log(expected_det.error());
+                    std::unreachable();
+                }
+            }
+        }
+
+        // adjostd::size_t is transposed of complement matrix
+        return std::expected<matrix, matrix_error>{transposition(complement)};
+    }
+
+    static constexpr std::expected<matrix, matrix_error> inverse(const matrix& data)
+    {
+        const std::size_t rows{data.size()};
+        const std::size_t columns{data[0].size()};
+        // assert correct dimensions
+        assert(rows == columns);
+        if (rows != columns) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
+
+        // matrix square
+        const std::size_t matrix_dims{rows};
+        // data is scalar, can omit later code
+        if (matrix_dims == 1) {
+            return std::expected<matrix, matrix_error>{data};
+        }
+
+        value_type det{};
+        if (auto expected_det{determinant(data, matrix_dims)}; expected_det.has_value()) {
+            det = std::move(expected_det).value();
+        }
+        else {
+            log(expected_det.error());
+            std::unreachable();
+        }
+
+        // assert correct determinant
+        assert(det != 0);
+        if (det == 0) {
+            return std::unexpected<matrix_error>{matrix_error::singularity};
+        }
+
+        matrix adjoint{};
+        if (auto expected_adjoint{adjoint(data)}; expected_adjoint.has_value()) {
+            adjoint = std::move(expected_adjoint).value();
+        }
+        else {
+            log(expected_adjoint.error());
+            std::unreachable();
+        }
+
+        // inverse is adjoint matrix divided by det factor
+        // division is multiplication by inverse
+        return std::expected<matrix, matrix_error>{scale(adjoint, 1 / det)};
+    }
+
+    static constexpr std::expected<matrix, matrix_error> upper_triangular(const matrix& data)
+    {
+        const std::size_t rows{data.size()};
+        const std::size_t columns{data[0].size()};
+        // assert correct dimensions
+        assert(rows == columns);
+        if (rows != columns) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
+
+        // matrix square
+        const std::size_t matrix_dims{rows};
+        // data is scalar
+        if (matrix_dims == 1)
+            return std::expected<matrix, matrix_error>{data};
+
+        // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
+        return std::expected<matrix, matrix_error>{transposition(lower_triangular(data))};
+    }
+
+    static constexpr std::expected<matrix, matrix_error> lower_triangular(const matrix& data)
+    {
+        const std::size_t rows{data.size()};
+        const std::size_t columns{data[0].size()};
+        // assert correct dimensions
+        assert(rows == columns);
+        if (rows != columns) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
+
+        // matrix square
+        const std::size_t matrix_dims = rows; // = columns;
+        // data is scalar
+        if (matrix_dims == 1) {
+            return std::expected<matrix, matrix_error>{data};
+        }
+
+        matrix lower_triangular{make_matrix(matrix_dims, matrix_dims)};
+
+        // decomposing data matrix into lower triangular
+        for (std::size_t row{0}; row < matrix_dims; ++row) {
+            for (std::size_t column{0}; column <= row; ++column) {
+                value_type sum{};
+
+                // summation for diagonals
+                if (column == row) {
+                    for (std::size_t iSumCol{0}; iSumCol < column; ++iSumCol) {
+                        sum += pow(lower_triangular[column][iSumCol], 2);
+                    }
+                    lower_triangular[column][column] = sqrt(data[column][column] - sum);
+                }
+                else {
+                    // evaluating L(row, column) using L(column, column)
+                    for (std::size_t iSumCol{0}; iSumCol < column; ++iSumCol) {
+                        sum += (lower_triangular[row][iSumCol] * lower_triangular[column][iSumCol]);
+                    }
+                    lower_triangular[row][column] = (data[row][column] - sum) / lower_triangular[column][column];
+                }
+            }
+        }
+        return std::expected<matrix, matrix_error>{std::move(lower_triangular)};
+    }
+
+    static constexpr std::expected<matrix, matrix_error> product(const matrix& left, const matrix& right)
+    {
+        const std::size_t left_rows{left.size()};
+        const std::size_t right_rows{right.size()};
+        const std::size_t left_columns = {left[0].size()};
+        const std::size_t right_columns{right[0].size()};
+
+        // assert correct dimensions
+        assert(left_columns == right_rows);
+        if (left_columns != right_rows) {
+            return std::unexpected<matrix_error>{matrix_error::wrong_dims};
+        }
+
+        const std::size_t product_rows{left_rows};
+        const std::size_t product_columns{right_columns};
+        matrix product{make_matrix(product_rows, product_columns)};
+
+        for (std::size_t left_row{0}; left_row < left_rows; ++left_row) {
+            for (std::size_t right_column{0}; right_column < right_columns; ++right_column) {
+                value_type sum{0};
+                for (std::size_t left_column{0}; left_column < left_columns; ++left_column) {
+                    sum += left[left_row][left_column] * right[left_column][right_column];
+                }
+                product[left_row][right_column] = sum;
+            }
+        }
+        return std::expected<matrix, matrix_error>{std::move(product)};
+    }
+
+    static constexpr matrix scale(const matrix& data, const value_type factor)
+    {
+        const std::size_t rows{data.size()};
+        const std::size_t columns{data[0].size()};
+
+        // factor is 1 then dont need to do anything
+        if (factor == 1) {
+            return data;
+        }
+        // factor is 0 then return matrix of zeros
+        else if (factor == 0) {
+            data.clear();
+            return data;
+        }
+
+        matrix scale{make_matrix(rows, columns)};
+        for (std::size_t row{0}; row < rows; ++row) {
+            for (std::size_t column{0}; column < columns; ++column) {
+                scale[row][column] = data[row][column] * factor;
+            }
+        }
+        return scale;
+    }
 
     std::size_t rows_{}; // first dim
 
     std::size_t columns_{}; // second dim
 
-    value_type det_{};
-
     matrix data_{}; // vector of vectors
 };
-
-template <typename value_type>
-inline constexpr matrix matrix_wrapper<value_type>::make_matrix(const std::size_t rows, const std::size_t cols)
-{
-    matrix rows_cols{};
-    rows_cols.reserve(rows);
-    for (std::size_t row{0}; row < rows; ++row) {
-        auto& column{rows_cols.emplace_back()};
-        column.reserve(cols);
-        for (std::size_t col{0}; col < cols; ++col) {
-            column.emplace_back();
-        }
-    }
-    return rows_cols;
-}
-
-template <typename value_type>
-constexpr matrix_wrapper<value_type>::matrix_wrapper(const std::size_t rows, const std::size_t cols) :
-    rows_{rows}, columns_{cols}, data_{make_matrix(rows, cols)}
-{
-}
-
-template <typename value_type>
-constexpr matrix_wrapper<value_type>::matrix_wrapper(const vector& diag) :
-    rows_{diag.size()}, columns_{rows_}, data_{make_matrix(rows_, columns_)}
-{
-    // create diagonal matrix with zeros beside diagonale
-    for (std::size_t row{0}; row < rows_; ++row) {
-        for (std::size_t col{0}; col < columns_; ++col) {
-            if (row == col) {
-                data_[row][col] = diag[row];
-            }
-        }
-    }
-}
-
-template <typename value_type>
-constexpr matrix_wrapper<value_type>::matrix_wrapper(matrix&& data) noexcept :
-    rows_{data.size()}, columns_{data[0].size()}, data_{std::forward<matrix>(data)}
-{
-}
-
-template <typename value_type>
-constexpr matrix_wrapper<value_type>::matrix_wrapper(const matrix& data) :
-    rows_{data.size()}, columns_{data[0].size()}, data_{data}
-{
-}
-
-template <typename value_type>
-constexpr std::expected<matrix, matrix_error> matrix_wrapper<value_type>::minor(const matrix& data,
-                                                                                const std::size_t row,
-                                                                                const std::size_t column,
-                                                                                const std::size_t matrix_dims) const
-{
-    const std::size_t rows{data.size()};
-    const std::size_t cols{data[0].size()};
-    // assert correct dimensions
-    assert(rows == cols);
-    if (rows != cols) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-    // assert cofactor isnt calculated for minor bigger than data
-    assert(matrix_dims < row && matrix_dims < column);
-    if (matrix_dims >= row || matrix_dims >= column) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-    // minor is scalar, can omit later code
-    if (matrix_dims == 0) {
-        return std::expected<matrix, matrix_error>{data};
-    }
-
-    matrix minor{make_matrix(matrix_dims, matrix_dims)};
-    std::size_t cof_row{0};
-    std::size_t cof_col{0};
-    for (std::size_t data_row{0}; data_row < matrix_dims; ++data_row) {
-        for (std::size_t data_col{0}; data_col < matrix_dims; ++data_col) {
-            // copying into cofactor matrix only those element which are not in given row and column
-            if (data_row != row && data_col != column) {
-                minor[cof_row][cof_col++] = data[data_row][data_col];
-
-                // row is filled, so increase row index and reset col index
-                if (cof_col == matrix_dims - 1) {
-                    cof_col = 0;
-                    ++cof_row;
-                }
-            }
-        }
-    }
-    return std::expected<matrix, matrix_error>{std::move(minor)};
-}
-
-template <typename value_type>
-constexpr std::expected<value_type, matrix_error> matrix_wrapper<value_type>::determinant(const matrix& data,
-                                                                                          std::size_t matrix_dims) const
-{
-    const std::size_t rows{data.size()};
-    const std::size_t cols{data[0].size()};
-    // assert correct dimensions
-    assert(rows == cols);
-    if (rows != cols) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-
-    // assert minor isnt bigger than data
-    assert(rows > matrix_dims && cols > matrix_dims);
-    if (rows <= matrix_dims || cols <= matrix_dims) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-
-    // data is scalar, can omit later code
-    if (matrix_dims == 1) {
-        return std::expected<value_type, matrix_error>{data[0][0]};
-    }
-    // data is 2x2 matrix, can omit later code
-    if (matrix_dims == 2) {
-        return std::expected<value_type, matrix_error>{std::in_place,
-                                                       (data[0][0] * data[1][1]) - (data[1][0] * data[0][1])};
-    }
-
-    value_type det{};
-
-    // sign multiplier
-    value_type sign{static_cast<value_type>(1)};
-    matrix minor(matrix_dims, vector(cols, matrix_dims));
-    for (std::size_t col{0}; col < matrix_dims; ++col) {
-        // cofactor of data[0][col]
-
-        if (auto expected_minor{minor(data, 0, col, matrix_dims)}; expected_minor.has_value()) {
-            minor = std::move(expected_minor).value();
-        }
-        else {
-            LOG(expected_minor.error());
-            std::unreachable();
-        }
-
-        if (auto expected_det{determinant(minor, matrix_dims - 1)}; expected_det.has_value()) {
-            det += sign * data[0][col] * std::move(expected_det).value();
-        }
-        else {
-            LOG(expected_det.error());
-            std::unreachable();
-        }
-
-        // alternate sign
-        sign *= static_cast<value_type>(-1);
-    }
-
-    return std::expected<value_type, matrix_error>{det};
-}
-
-template <typename value_type>
-constexpr matrix matrix_wrapper<value_type>::transposition(const matrix& data) const
-{
-    const std::size_t new_rows{data.size()};
-    const std::size_t new_cols{data[0].size()};
-
-    // data is scalar, can omit later code
-    if ((new_rows == new_cols) == 1)
-        return data;
-
-    matrix transposition{make_matrix(new_rows, new_cols)};
-    for (std::size_t row{0}; row < new_rows; ++row) {
-        for (std::size_t col{0}; col < new_cols; ++col) {
-            transposition[row][col] = data[col][row];
-        }
-    }
-    return transposition;
-}
-
-template <typename value_type>
-constexpr std::expected<matrix, matrix_error> matrix_wrapper<value_type>::adjoint(const matrix& data) const
-{
-    const std::size_t rows{data.size()};
-    const std::size_t cols{data[0].size()};
-    // assert correct dimensions
-    assert(rows == cols);
-    if (rows != cols) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-
-    // matrix square
-    const std::size_t matrix_dims{rows};
-    // data is scalar, can omit later code
-    if (matrix_dims == 1) {
-        return std::expected<matrix, matrix_error>{data};
-    }
-
-    matrix complement(matrix_dims, vector(matrix_dims, 0));
-
-    // sign multiplier
-    value_type sign{static_cast<value_type>(1)};
-    matrix minor{make_matrix(matrix_dims, matrix_dims)};
-    for (std::size_t row{0}; row < matrix_dims; ++row) {
-        for (std::size_t col{0}; col < matrix_dims; col++) {
-            // get cofactor of data[row][col]
-
-            if (auto expected_minor{minor(data, row, col, matrix_dims)}; expected_minor.has_value()) {
-                minor = std::move(expected_minor).value();
-            }
-            else {
-                LOG(expected_minor.error());
-                std::unreachable();
-            }
-
-            // sign of adj[col][row] positive if sum of row and column indexes is even
-            if ((row + col) % 2 == 0) {
-                sign = static_cast<value_type>(1);
-            }
-            else {
-                sign = static_cast<value_type>(-1);
-            }
-
-            // complement is matrix of determinants of minors with alternating signs!!!
-            if (auto expected_det{determinant(minor, matrix_dims - 1)}; expected_det.has_value()) {
-                complement[row][col] = (sign)*std::move(expected_det).value();
-            }
-            else {
-                LOG(expected_det.error());
-                std::unreachable();
-            }
-        }
-    }
-
-    // adjostd::size_t is transposed of complement matrix
-    return std::expected<matrix, matrix_error>{transposition(complement)};
-}
-
-template <typename value_type>
-constexpr std::expected<matrix, matrix_error> matrix_wrapper<value_type>::inverse(const matrix& data) const
-{
-    const std::size_t rows{data.size()};
-    const std::size_t cols{data[0].size()};
-    // assert correct dimensions
-    assert(rows == cols);
-    if (rows != cols) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-
-    // matrix square
-    const std::size_t matrix_dims{rows};
-    // data is scalar, can omit later code
-    if (matrix_dims == 1) {
-        return std::expected<matrix, matrix_error>{data};
-    }
-
-    value_type det{};
-    if (auto expected_det{determinant(data, matrix_dims)}; expected_det.has_value()) {
-        det = std::move(expected_det).value();
-    }
-    else {
-        LOG(expected_det.error());
-        std::unreachable();
-    }
-
-    // assert correct determinant
-    assert(det != 0);
-    if (det == 0) {
-        return std::unexpected<matrix_error>{matrix_error::singularity};
-    }
-
-    matrix adjoint{};
-    if (auto expected_adjoint{adjoint(data)}; expected_adjoint.has_value()) {
-        adjoint = std::move(expected_adjoint).value();
-    }
-    else {
-        LOG(expected_adjoint.error());
-        std::unreachable();
-    }
-
-    // inverse is adjoint matrix divided by det factor
-    // division is multiplication by inverse
-    return std::expected<matrix, matrix_error>{scale(adjoint, 1 / det)};
-}
-
-template <typename value_type>
-constexpr std::expected<matrix, matrix_error> matrix_wrapper<value_type>::upper_triangular(const matrix& data) const
-{
-    const std::size_t rows{data.size()};
-    const std::size_t cols{data[0].size()};
-    // assert correct dimensions
-    assert(rows == cols);
-    if (rows != cols) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-
-    // matrix square
-    const std::size_t matrix_dims{rows};
-    // data is scalar
-    if (matrix_dims == 1)
-        return std::expected<matrix, matrix_error>{data};
-
-    // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
-    return std::expected<matrix, matrix_error>{transpose(lower_triangular(data))};
-}
-
-template <typename value_type>
-constexpr std::expected<matrix, matrix_error> matrix_wrapper<value_type>::lower_triangular(const matrix& data) const
-{
-    const std::size_t rows{data.size()};
-    const std::size_t cols{data[0].size()};
-    // assert correct dimensions
-    assert(rows == cols);
-    if (rows != cols) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-
-    // matrix square
-    const std::size_t matrix_dims = rows; // = cols;
-    // data is scalar
-    if (matrix_dims == 1) {
-        return std::expected<matrix, matrix_error>{data};
-    }
-
-    matrix lower_triangular{make_matrix(matrix_dims, matrix_dims)};
-
-    // decomposing data matrix into lower triangular
-    for (std::size_t row{0}; row < matrix_dims; ++row) {
-        for (std::size_t col{0}; col <= row; ++col) {
-            value_type sum{};
-
-            // summation for diagonals
-            if (col == row) {
-                for (std::size_t iSumCol{0}; iSumCol < col; ++iSumCol) {
-                    sum += pow(lower_triangular[col][iSumCol], 2);
-                }
-                lower_triangular[col][col] = sqrt(data[col][col] - sum);
-            }
-            else {
-                // evaluating L(row, col) using L(col, col)
-                for (std::size_t iSumCol{0}; iSumCol < col; ++iSumCol) {
-                    sum += (lower_triangular[row][iSumCol] * lower_triangular[col][iSumCol]);
-                }
-                lower_triangular[row][col] = (data[row][col] - sum) / lower_triangular[col][col];
-            }
-        }
-    }
-    return std::expected<matrix, matrix_error>{std::move(lower_triangular)};
-}
-
-template <typename value_type>
-constexpr std::expected<matrix, matrix_error> matrix_wrapper<value_type>::product(const matrix& left,
-                                                                                  const matrix& right) const
-{
-    const std::size_t left_rows{left.size()};
-    const std::size_t right_rows{right.size()};
-    const std::size_t left_cols = {left[0].size()};
-    const std::size_t right_cols{right[0].size()};
-
-    // assert correct dimensions
-    assert(left_cols == right_rows);
-    if (left_cols != right_rows) {
-        return std::unexpected<matrix_error>{matrix_error::wrong_dims};
-    }
-
-    const std::size_t product_rows{left_rows};
-    const std::size_t product_cols{right_cols};
-    matrix product(product_rows, vector(product_cols, 0));
-
-    for (std::size_t left_row{0}; left_row < left_rows; ++left_row) {
-        for (std::size_t right_col{0}; right_col < right_cols; ++right_col) {
-            value_type sum{0};
-            for (std::size_t left_col{0}; left_col < left_cols; ++left_col) {
-                sum += left[left_row][left_col] * right[left_col][right_col];
-            }
-            product[left_row][right_col] = sum;
-        }
-    }
-    return std::expected<matrix, matrix_error>{std::move(product)};
-}
-
-template <typename value_type>
-constexpr matrix matrix_wrapper<value_type>::scale(const matrix& data, const value_type factor) const
-{
-    const std::size_t rows{data.size()};
-    const std::size_t cols{data[0].size()};
-
-    // factor is 1 then dont need to do anything
-    if (factor == 1) {
-        return data;
-    }
-    // factor is 0 then return matrix of zeros
-    else if (factor == 0) {
-        data.clear();
-        return data;
-    }
-
-    matrix scale{make_matrix(rows, cols)};
-    for (std::size_t row{0}; row < rows; ++row) {
-        for (std::size_t col{0}; col < cols; ++col) {
-            scale[row][col] = data[row][col] * factor;
-        }
-    }
-    return scale;
-}
-
-template <typename value_type>
-constexpr void matrix_wrapper<value_type>::append_row(const std::size_t row, const vector& new_row)
-{
-    assert(new_row.size() == columns_);
-    data_.insert(std::next(data_.begin(), row), new_row); // basic pointer math (iterators are pointers)
-    ++rows_;
-}
-
-template <typename value_type>
-constexpr void matrix_wrapper<value_type>::append_column(const std::size_t column, const vector& new_column)
-{
-    assert(new_column.size() == rows_);
-    for (std::size_t row{0}; row < rows_; ++row) {
-        data_[row].insert(std::next(data_[row].begin(), column),
-                          new_column[row]); // basic pointer math (iterators are pointers)
-    }
-    ++columns_;
-}
-
-template <typename value_type>
-constexpr void matrix_wrapper<value_type>::delete_row(const std::size_t row)
-{
-    assert(row <= rows_);
-    data_.erase(std::next(data_.begin(), row));
-    --rows_;
-}
-
-template <typename value_type>
-constexpr void matrix_wrapper<value_type>::delete_column(const std::size_t column)
-{
-    assert(column <= columns_);
-    for (std::size_t row{0}; row < rows_; ++row) {
-        data_[row].erase(std::next(data_[row].begin(), column));
-    }
-    --columns_;
-}
-
-template <typename value_type>
-constexpr vector matrix_wrapper<value_type>::end_row() const noexcept
-{
-    return data_.back();
-}
-
-template <typename value_type>
-constexpr vector matrix_wrapper<value_type>::begin_row() const noexcept
-{
-    return data_.front();
-}
-
-template <typename value_type>
-constexpr vector matrix_wrapper<value_type>::end_column() const
-{
-    vector end_column{};
-    begin_column.reserve(rows_);
-    for (std::size_t row{0}; row < rows_; ++row) {
-        begin_column.push_back(data_[row].back());
-    }
-    return end_column;
-}
-
-template <typename value_type>
-constexpr vector matrix_wrapper<value_type>::begin_column() const
-{
-    vector begin_column{};
-    begin_column.reserve(rows_);
-    for (std::size_t row{0}; row < rows_; ++row) {
-        begin_column.push_back(data_[row].front());
-    }
-    return begin_column;
-}
-
-template <typename value_type>
-constexpr void matrix_wrapper<value_type>::resize(const std::size_t new_rows, const std::size_t new_cols)
-{
-    rows_ = new_rows;
-    columns_ = new_cols;
-    data_.resize(rows_);
-    for (auto& row : data_) {
-        row.resize(columns_);
-    }
-}
-
-template <typename value_type>
-constexpr inline void matrix_wrapper<value_type>::clear()
-{
-    data_.clear();
-}
-
-template <typename value_type>
-constexpr inline constexpr bool matrix_wrapper<value_type>::empty() const noexcept
-{
-    return rows_ == columns_ == 0;
-}
-
-template <typename value_type>
-constexpr std::size_t matrix_wrapper<value_type>::rows() const noexcept
-{
-    return rows_;
-}
-
-template <typename value_type>
-constexpr std::size_t matrix_wrapper<value_type>::columns() const noexcept
-{
-    return columns_;
-}
-
-template <typename value_type>
-constexpr vector matrix_wrapper<value_type>::diagonale() const
-{
-    assert(rows_ == columns_);
-
-    vector diagonale(rows_);
-
-    for (std::size_t diag{0}; diag < rows_; ++diag) {
-        diagonale[diag] = data_[diag][diag];
-    }
-    return diagonale;
-}
-
-template <typename value_type>
-constexpr void matrix_wrapper<value_type>::transpose() noexcept
-{
-    data_ = transposition(data_);
-
-    // swap dimensions
-    std::swap(rows_, columns_);
-}
-
-template <typename value_type>
-constexpr void matrix_wrapper<value_type>::invert() noexcept
-{
-    if (auto inverse{inverse(data_)}; inverse.has_value()) {
-        data_ = std::move(inverse).value();
-    }
-    else {
-        LOG(inverse.error());
-        std::unreachable();
-    }
-}
-
-template <typename value_type>
-constexpr matrix_wrapper matrix_wrapper<value_type>::operator+(const matrix_wrapper& other) const noexcept
-{
-    // assert correct dimensions
-    assert(other.rows_ == this->rows_);
-    assert(other.columns_ == this->rows_);
-
-    matrix_wrapper result{other.rows_, other.columns_};
-
-    for (std::size_t row{0}; row < this->rows_; ++row) {
-        for (std::size_t col{0}; col < this->columns_; ++col) {
-            result.data_[row][col] = this->data_[row][col] + other.data_[row][col];
-        }
-    }
-    return result;
-}
-
-template <typename value_type>
-constexpr matrix_wrapper& matrix_wrapper<value_type>::operator+=(const matrix_wrapper& other) noexcept
-{
-    // assert correct dimensions
-    assert(other.rows_ == this->rows_);
-    assert(other.columns_ == this->rows_);
-
-    for (std::size_t row{0}; row < this->rows_; ++row) {
-        for (std::size_t col{0}; col < this->columns_; ++col) {
-            this->data_[row][col] += other.data_[row][col];
-        }
-    }
-    return *this;
-}
-
-template <typename value_type>
-constexpr matrix_wrapper matrix_wrapper<value_type>::operator-(const matrix_wrapper& other) const noexcept
-{
-    // assert correct dimensions
-    assert(other.rows_ == this->rows_);
-    assert(other.columns_ == this->rows_);
-
-    matrix_wrapper result{other.rows_, other.columns_};
-
-    for (std::size_t row{0}; row < this->rows_; ++row) {
-        for (std::size_t col{0}; col < this->columns_; ++col) {
-            result.data_[row][col] = this->data_[row][col] - other.data_[row][col];
-        }
-    }
-    return result;
-}
-
-template <typename value_type>
-constexpr matrix_wrapper& matrix_wrapper<value_type>::operator-=(const matrix_wrapper& other) noexcept
-{
-    // assert correct dimensions
-    assert(other.rows_ == this->rows_);
-    assert(other.columns_ == this->rows_);
-
-    for (std::size_t row{0}; row < this->rows_; ++row) {
-        for (std::size_t col{0}; col < this->columns_; ++col) {
-            this->data_[row][col] -= other.data_[row][col];
-        }
-    }
-    return *this;
-}
-
-template <typename value_type>
-constexpr inline const matrix& matrix_wrapper<value_type>::data() const& noexcept
-{
-    return data_;
-}
-
-template <typename value_type>
-constexpr inline matrix&& matrix_wrapper<value_type>::data() && noexcept
-{
-    return std::move(data_);
-}
-
-template <typename value_type>
-constexpr matrix_wrapper matrix_wrapper<value_type>::operator*(const value_type& factor) const noexcept
-{
-    // factor is 1 then dont need to do anything
-    if (factor == 1) {
-        return *this;
-    }
-    // factor is 0 then return matrix of zeros
-    else if (factor == 0) {
-        clear();
-        return *this;
-    }
-    return matrix_wrapper{scale(data_, factor)}; // matrix_wrapper cstr no.1
-}
-
-template <typename value_type>
-constexpr matrix_wrapper& matrix_wrapper<value_type>::operator*=(const value_type& factor) noexcept
-{
-    // factor is 1 then dont need to do anything
-    if (factor == 1) {
-        return *this;
-    }
-    // factor is 0 then return zero-ed this
-    else if (factor == 0) {
-        clear();
-        return *this;
-    }
-
-    data_ = scale(data_, factor);
-    return *this;
-}
-
-template <typename value_type>
-constexpr matrix_wrapper matrix_wrapper<value_type>::operator/(const value_type& factor) const noexcept
-{
-    // assert no division by 0!!!
-    assert(factor != 0);
-
-    // factor is 1 then dont need to do anything
-    if (factor == 1) {
-        return *this;
-    }
-
-    // division is multiplication by inverse
-    return matrix_wrapper{scale(data_, 1 / factor)};
-}
-
-template <typename value_type>
-constexpr matrix_wrapper& matrix_wrapper<value_type>::operator/=(const value_type& factor) noexcept
-{
-    // assert no division by 0!!!
-    assert(factor != 0);
-
-    // factor is 1 then dont need to do anything
-    if (factor == 1) {
-        return *this;
-    }
-
-    // division is multiplication by inverse
-    data_ = scale(data_, 1 / factor);
-    return *this;
-}
-
-template <typename value_type>
-constexpr matrix_wrapper matrix_wrapper<value_type>::operator*(const matrix_wrapper& other) const noexcept
-{
-    // assert correct dimensions
-    assert(this->columns_ == other.rows_);
-
-    result.rows_ = this->rows_;
-    result.columns_ = other.columns_;
-    return matrix_wrapper{product(this->data_, other.data_)};
-}
-
-template <typename value_type>
-constexpr matrix_wrapper& matrix_wrapper<value_type>::operator*=(const matrix_wrapper& other) noexcept
-{
-    // assert correct dimensions
-    assert(this->columns_ == other.rows_);
-
-    this->data_ = product(this->data_, other.data_);
-    this->rows_ = this->rows_;
-    this->columns_ = other.columns_;
-    return *this;
-}
-
-template <typename value_type>
-constexpr matrix_wrapper matrix_wrapper<value_type>::operator/(const matrix_wrapper& other) const noexcept
-{
-    // assert correct dimensions
-    assert(this->columns_ == other.rows_);
-
-    // division is multiplication by inverse
-    if (auto inverted{inverse(other.data_)}; inverted.has_value()) {
-        if (auto product{product(data_, std::move(inverted).value())}; product.has_value()) {
-            result.rows_ = this->rows_;
-            result.columns_ = other.columns_;
-            return matrix_wrapper{std::move(product).value()};
-        }
-        else {
-            LOG(product.error());
-            std::unreachable();
-        }
-    }
-    else {
-        LOG(inverted.error());
-        std::unreachable();
-    }
-}
-
-template <typename value_type>
-constexpr matrix_wrapper& matrix_wrapper<value_type>::operator/=(const matrix_wrapper& other) noexcept
-{
-    // assert correct dimensions
-    assert(this->columns_ == other.rows_);
-
-    // division is multiplication by inverse
-    if (auto inverted{inverse(other.data_)}; inverted.has_value()) {
-        if (auto product{product(data_, std::move(inverted).value())}; product.has_value()) {
-            *this = std::move(product).value();
-            this->columns_ = other.columns_;
-            return *this;
-        }
-        else {
-            LOG(product.error());
-            std::unreachable();
-        }
-    }
-    else {
-        LOG(inverted.error());
-        std::unreachable();
-    }
-}
-
-template <typename value_type>
-constexpr inline void matrix_wrapper<value_type>::operator=(matrix&& data) noexcept
-{
-    data_ = std::forward<matrix>(data);
-}
-
-template <typename value_type>
-constexpr inline void matrix_wrapper<value_type>::operator=(const matrix& data) noexcept
-{
-    data_ = data;
-}
-
-template <typename value_type>
-constexpr const vector& matrix_wrapper<value_type>::operator()(std::size_t row) const noexcept
-{
-    return data_.at(row);
-}
-template <typename value_type>
-constexpr const value_type& matrix_wrapper<value_type>::operator()(const std::size_t row,
-                                                                   std::size_t column) const noexcept
-{
-    return data_.at(row)(column);
-}
-
-template <typename value_type>
-constexpr vector& matrix_wrapper<value_type>::operator()(std::size_t row) noexcept
-{
-    return data_.at(row);
-}
-
-template <typename value_type>
-constexpr value_type& matrix_wrapper<value_type>::operator()(const std::size_t row, std::size_t column) noexcept
-{
-    return data_.at(row)(column);
-}
 
 #endif // MATRIX_HPP
