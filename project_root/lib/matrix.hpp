@@ -4,8 +4,8 @@
 #include <cassert>
 #include <cmath>
 #include <compare>
-#include <cstdio>
 #include <expected>
+#include <print>
 #include <utility>
 #include <vector>
 
@@ -32,7 +32,7 @@ namespace {
 
     constexpr void log(const matrix_error error) noexcept
     {
-        puts(matrix_error_to_string(error));
+        std::print("%s", matrix_error_to_string(error));
     }
 
     struct diagonal_t {
