@@ -1,48 +1,89 @@
-#include "kalman.h"
+#include "kalman.hpp"
 #include <cassert>
-#include <iostream>
-#include <string_view>
 #include <utility>
 
-inline static void LOG(const auto* error) {
-    std::cerr << error;
+inline static void LOG(const auto* info)
+{
+    std::print(info);
 }
 
-Kalman::Kalman(const FilterModel& filter, const MeasureModel& measure) :
-    A_{filter.A}, B_{filter.B}, P_{filter.P}, Q_{filter.Q}, x_{filter.x}, u_{filter.u}, H_{measure.H}, R_{measure.R},
-    S_{measure.S}, K_{measure.K}, z_{measure.z}, y_{measure.z}, inputs_{filter.inputs}, states_{filter.inputs},
-    measurements_{measure.measurements} {
+kalman::kalman(const filter_model& filter, const measure_model& measure) :
+    A_{filter.A},
+    B_{filter.B},
+    P_{filter.P},
+    Q_{filter.Q},
+    x_{filter.x},
+    u_{filter.u},
+    H_{measure.H},
+    R_{measure.R},
+    S_{measure.S},
+    K_{measure.K},
+    z_{measure.z},
+    y_{measure.z},
+    inputs_{filter.inputs},
+    states_{filter.inputs},
+    measurements_{measure.measurements}
+{
+    LOG("Initialized");
     assert(filter.states == measure.states);
-    isInitialized_ = true;
+    is_initialized_ = true;
 }
 
-Kalman::Kalman(FilterModel&& filter, MeasureModel&& measure) :
-    A_{std::move(filter.A)}, B_{std::move(filter.B)}, P_{std::move(filter.P)}, Q_{std::move(filter.Q)},
-    x_{std::move(filter.x)}, u_{std::move(filter.u)}, H_{std::move(measure.H)}, R_{std::move(measure.R)},
-    S_{std::move(measure.S)}, K_{std::move(measure.K)}, z_{std::move(measure.z)}, y_{std::move(measure.z)},
-    inputs_{filter.inputs}, states_{filter.inputs}, measurements_{measure.measurements} {
+kalman::kalman(filter_model&& filter, measure_model&& measure) :
+    A_{std::move(filter.A)},
+    B_{std::move(filter.B)},
+    P_{std::move(filter.P)},
+    Q_{std::move(filter.Q)},
+    x_{std::move(filter.x)},
+    u_{std::move(filter.u)},
+    H_{std::move(measure.H)},
+    R_{std::move(measure.R)},
+    S_{std::move(measure.S)},
+    K_{std::move(measure.K)},
+    z_{std::move(measure.z)},
+    y_{std::move(measure.z)},
+    inputs_{filter.inputs},
+    states_{filter.inputs},
+    measurements_{measure.measurements}
+{
+    LOG("Initialized");
     assert(filter.states == measure.states);
-    isInitialized_ = true;
+    is_initialized_ = true;
 }
 
-bool Kalman::getIsInitialized() const noexcept {
-    return isInitialized_;
+bool kalman::is_initialized() const noexcept
+{
+    return is_initialized_;
 }
 
-const mtx::Matrix<float>& Kalman::getState() const noexcept {
+matrix_wrapper<float>&& kalman::state() && noexcept
+{
+    return std::move(x_);
+}
+
+const matrix_wrapper<float>& kalman::state() const& noexcept
+{
     return x_;
 }
 
-double Kalman::getTime() const noexcept {
-    return currentTime_;
+double kalman::current_time() const noexcept
+{
+    return current_time_;
 }
 
-void Kalman::setInputs(const mtx::Matrix<float>& inputs) noexcept {
+void kalman::inputs(const matrix_wrapper<float>& inputs) noexcept
+{
     u_ = inputs;
 }
 
-void Kalman::predict() noexcept {
-    if (!isInitialized_) {
+void kalman::inputs(matrix_wrapper<float>&& inputs) noexcept
+{
+    u_ = std::forward<matrix_wrapper<float>>(inputs);
+}
+
+void kalman::predict() noexcept
+{
+    if (!is_initialized_) {
         LOG("Filter unitialized!");
         return;
     }
@@ -66,8 +107,9 @@ void Kalman::predict() noexcept {
     P_ += ((B_ * Q_) * B_);
 }
 
-void Kalman::update() noexcept {
-    if (!isInitialized_) {
+void kalman::update() noexcept
+{
+    if (!is_initialized_) {
         LOG("Filter unitialized!");
         return;
     }
