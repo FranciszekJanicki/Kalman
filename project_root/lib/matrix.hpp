@@ -40,6 +40,7 @@ namespace {
     };
     constexpr diagonal_t diagonal_tag{};
 }; // namespace
+
 template <typename value_type>
 class matrix_wrapper {
 public:
@@ -195,19 +196,19 @@ public:
         assert(this->columns_ == other.rows_);
 
         // division is multiplication by inverse
-        if (auto inverse_value{inverse(other.data_)}; inverse_value.has_value()) {
-            if (auto product_value{product(this->data_, inverse_value.value())}; product_value.has_value()) {
-                *this = std::move(product_value).value();
+        if (auto expected_inverse{inverse(other.data_)}; expected_inverse.has_value()) {
+            if (auto expected_product{product(this->data_, expected_inverse.value())}; expected_product.has_value()) {
+                *this = std::move(expected_product).value();
                 this->columns_ = other.columns_;
                 return *this;
             }
             else {
-                log(product_value.error());
+                log(expected_product.error());
                 std::unreachable();
             }
         }
         else {
-            log(inverse_value.error());
+            log(expected_inverse.error());
             std::unreachable();
         }
     }
@@ -298,17 +299,17 @@ public:
         assert(this->columns_ == other.rows_);
 
         // division is multiplication by inverse
-        if (auto inverse_value{inverse(other.data_)}; inverse_value.has_value()) {
-            if (auto product_value{product(this->data_, inverse_value.value())}; product_value.has_value()) {
-                return matrix_wrapper{std::move(product_value).value()};
+        if (auto expected_inverse{inverse(other.data_)}; expected_inverse.has_value()) {
+            if (auto expected_product{product(this->data_, expected_inverse.value())}; expected_product.has_value()) {
+                return matrix_wrapper{std::move(expected_product).value()};
             }
             else {
-                log(product_value.error());
+                log(expected_product.error());
                 std::unreachable();
             }
         }
         else {
-            log(inverse_value.error());
+            log(expected_inverse.error());
             std::unreachable();
         }
     }
@@ -500,11 +501,11 @@ public:
 
     constexpr void invert() noexcept
     {
-        if (auto inverse_value{inverse(this->data_)}; inverse_value.has_value()) {
-            this->data_ = std::move(inverse_value).value();
+        if (auto expected_inverse{inverse(this->data_)}; expected_inverse.has_value()) {
+            this->data_ = std::move(expected_inverse).value();
         }
         else {
-            log(inverse_value.error());
+            log(expected_inverse.error());
             std::unreachable();
         }
     }
@@ -597,7 +598,7 @@ private:
             return std::expected<matrix, matrix_error>{data};
         }
 
-        matrix minor{make_matrix(matrix_dims, matrix_dims)};
+        auto minor{make_matrix(matrix_dims, matrix_dims)};
         std::size_t cof_row{0};
         std::size_t cof_column{0};
         for (std::size_t row_{0}; row_ < matrix_dims; ++row_) {
@@ -643,11 +644,11 @@ private:
                                                            (data[0][0] * data[1][1]) - (data[1][0] * data[0][1])};
         }
 
-        value_type det{};
+        auto det{static_cast<value_type>(0)};
 
         // sign multiplier
-        value_type sign{static_cast<value_type>(1)};
-        matrix minor{make_matrix(matrix_dims, matrix_dims)};
+        auto sign{static_cast<value_type>(1)};
+        auto minor{make_matrix(matrix_dims, matrix_dims)};
         for (std::size_t column{0}; column < matrix_dims; ++column) {
             // cofactor of data[0][column]
 
@@ -683,7 +684,7 @@ private:
         if ((new_rows == new_columns) == 1)
             return data;
 
-        matrix transposition{make_matrix(new_rows, new_columns)};
+        auto transposition{make_matrix(new_rows, new_columns)};
         for (std::size_t row{0}; row < new_rows; ++row) {
             for (std::size_t column{0}; column < new_columns; ++column) {
                 transposition[row][column] = data[column][row];
@@ -709,11 +710,11 @@ private:
             return std::expected<matrix, matrix_error>{data};
         }
 
-        matrix complement{make_matrix(matrix_dims, matrix_dims)};
+        auto complement{make_matrix(matrix_dims, matrix_dims)};
 
         // sign multiplier
-        value_type sign{static_cast<value_type>(1)};
-        matrix minor{make_matrix(matrix_dims, matrix_dims)};
+        auto sign{static_cast<value_type>(1)};
+        auto minor{make_matrix(matrix_dims, matrix_dims)};
         for (std::size_t row{0}; row < matrix_dims; ++row) {
             for (std::size_t column{0}; column < matrix_dims; column++) {
                 // get cofactor of data[row][column]
@@ -766,33 +767,31 @@ private:
             return std::expected<matrix, matrix_error>{data};
         }
 
-        value_type det{};
         if (auto expected_det{determinant(data, matrix_dims)}; expected_det.has_value()) {
-            det = std::move(expected_det).value();
+            const auto det{std::move(expected_det).value()};
+
+            // assert correct determinant
+            assert(det != 0);
+            if (det == 0) {
+                return std::unexpected<matrix_error>{matrix_error::singularity};
+            }
+
+            if (auto expected_adjoint{adjoint(data)}; expected_adjoint.has_value()) {
+                const auto adjoint{std::move(expected_adjoint).value()};
+
+                // inverse is adjoint matrix divided by det factor
+                // division is multiplication by inverse
+                return std::expected<matrix, matrix_error>{scale(adjoint, 1 / det)};
+            }
+            else {
+                log(expected_adjoint.error());
+                std::unreachable();
+            }
         }
         else {
             log(expected_det.error());
             std::unreachable();
         }
-
-        // assert correct determinant
-        assert(det != 0);
-        if (det == 0) {
-            return std::unexpected<matrix_error>{matrix_error::singularity};
-        }
-
-        matrix adjoint{};
-        if (auto expected_adjoint{adjoint(data)}; expected_adjoint.has_value()) {
-            adjoint = std::move(expected_adjoint).value();
-        }
-        else {
-            log(expected_adjoint.error());
-            std::unreachable();
-        }
-
-        // inverse is adjoint matrix divided by det factor
-        // division is multiplication by inverse
-        return std::expected<matrix, matrix_error>{scale(adjoint, 1 / det)};
     }
 
     static constexpr std::expected<matrix, matrix_error> upper_triangular(const matrix& data)
@@ -873,7 +872,7 @@ private:
 
         const std::size_t product_rows{left_rows};
         const std::size_t product_columns{right_columns};
-        matrix product{make_matrix(product_rows, product_columns)};
+        auto product{make_matrix(product_rows, product_columns)};
 
         for (std::size_t left_row{0}; left_row < left_rows; ++left_row) {
             for (std::size_t right_column{0}; right_column < right_columns; ++right_column) {
@@ -902,7 +901,7 @@ private:
             return data;
         }
 
-        matrix scale{make_matrix(rows, columns)};
+        auto scale{make_matrix(rows, columns)};
         for (std::size_t row{0}; row < rows; ++row) {
             for (std::size_t column{0}; column < columns; ++column) {
                 scale[row][column] = data[row][column] * factor;
