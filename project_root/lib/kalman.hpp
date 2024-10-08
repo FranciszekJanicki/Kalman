@@ -41,28 +41,28 @@ struct measure_model {
 
 class kalman {
 public:
-    constexpr kalman() = default;
+    kalman() = default;
 
-    explicit constexpr kalman(const filter_model& filter, const measure_model& measure);
+    explicit kalman(const filter_model& filter, const measure_model& measure);
 
-    explicit constexpr kalman(filter_model&& filter, measure_model&& measure);
+    explicit kalman(filter_model&& filter, measure_model&& measure);
 
-    [[nodiscard]] constexpr matrix_wrapper<float>&& state() && noexcept;
+    [[nodiscard]] matrix_wrapper<float>&& state() && noexcept;
 
-    [[nodiscard]] constexpr const matrix_wrapper<float>& state() const& noexcept;
+    [[nodiscard]] const matrix_wrapper<float>& state() const& noexcept;
 
-    [[nodiscard]] constexpr double current_time() const noexcept;
+    [[nodiscard]] double current_time() const noexcept;
 
-    [[nodiscard]] constexpr bool is_initialized() const noexcept;
+    [[nodiscard]] bool is_initialized() const noexcept;
 
-    constexpr void inputs(const matrix_wrapper<float>& inputs);
+    void inputs(const matrix_wrapper<float>& inputs);
 
-    constexpr void inputs(matrix_wrapper<float>&& inputs) noexcept;
+    void inputs(matrix_wrapper<float>&& inputs) noexcept;
 
 private:
-    constexpr void predict() noexcept;
+    void predict() noexcept;
 
-    constexpr void update() noexcept;
+    void update() noexcept;
 
     bool is_initialized_{false};
 

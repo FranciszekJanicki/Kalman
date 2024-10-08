@@ -30,16 +30,17 @@ namespace {
         }
     }
 
-    constexpr void log(const matrix_error error) noexcept
+    constexpr void print_matrix_error(const matrix_error error) noexcept
     {
         std::print("%s", matrix_error_to_string(error));
     }
 
-    struct diagonal_t {
-        explicit diagonal_t() = default;
-    };
-    constexpr diagonal_t diagonal_tag{};
 }; // namespace
+
+struct diagonal_t {
+    explicit diagonal_t() = default;
+};
+constexpr diagonal_t diagonal_tag{};
 
 template <typename value_type>
 class matrix_wrapper {
@@ -58,14 +59,14 @@ public:
         return matrix_wrapper<value_type>{diagonal_tag, matrix_dims, value_type{1}};
     }
 
-    [[nodiscard]] static constexpr matrix_wrapper<value_type> ones(const std::size_t matrix_dims)
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> ones(const std::size_t rows, const std::size_t columns)
     {
-        return matrix_wrapper<value_type>{matrix_dims, matrix_dims, value_type{1}};
+        return matrix_wrapper<value_type>{rows, columns, value_type{1}};
     }
 
-    [[nodiscard]] static constexpr matrix_wrapper<value_type> zeros(const std::size_t matrix_dims)
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> zeros(const std::size_t rows, const std::size_t columns)
     {
-        return matrix_wrapper<value_type>{matrix_dims, matrix_dims};
+        return matrix_wrapper<value_type>{rows, columns};
     }
 
     constexpr matrix_wrapper() noexcept = default;
@@ -184,10 +185,16 @@ public:
         // assert correct dimensions
         assert(this->columns_ == other.rows_);
 
-        this->data_ = product(this->data_, other.data_);
-        // this->rows_ = this->rows_;
-        this->columns_ = other.columns_;
-        return *this;
+        if (auto expected_product{product(this->data_, other.data_)}; expected_product.has_value()) {
+            this->data_ = std::move(expected_product).value();
+            // this->rows_ = this->rows_;
+            this->columns_ = other.columns_;
+            return *this;
+        }
+        else {
+            print_matrix_error(expected_product.error());
+            std::unreachable();
+        }
     }
 
     constexpr matrix_wrapper& operator/=(const matrix_wrapper& other) noexcept
@@ -203,12 +210,12 @@ public:
                 return *this;
             }
             else {
-                log(expected_product.error());
+                print_matrix_error(expected_product.error());
                 std::unreachable();
             }
         }
         else {
-            log(expected_inverse.error());
+            print_matrix_error(expected_inverse.error());
             std::unreachable();
         }
     }
@@ -290,7 +297,13 @@ public:
         // assert correct dimensions
         assert(this->columns_ == other.rows_);
 
-        return matrix_wrapper{product(this->data_, other.data_)};
+        if (auto expected_product{product(this->data_, other.data_)}; expected_product.has_value()) {
+            return matrix_wrapper{std::move(expected_product).value()};
+        }
+        else {
+            print_matrix_error(expected_product.error());
+            std::unreachable();
+        }
     }
 
     constexpr matrix_wrapper operator/(const matrix_wrapper& other) const
@@ -304,24 +317,24 @@ public:
                 return matrix_wrapper{std::move(expected_product).value()};
             }
             else {
-                log(expected_product.error());
+                print_matrix_error(expected_product.error());
                 std::unreachable();
             }
         }
         else {
-            log(expected_inverse.error());
+            print_matrix_error(expected_inverse.error());
             std::unreachable();
         }
     }
 
     explicit constexpr operator matrix() && noexcept
     {
-        return std::move(data_);
+        return std::move(this->data_);
     }
 
     explicit constexpr operator matrix() const& noexcept
     {
-        return data_;
+        return this->data_;
     }
 
     [[nodiscard]] constexpr const vector& operator[](const std::size_t row) const noexcept
@@ -505,7 +518,7 @@ public:
             this->data_ = std::move(expected_inverse).value();
         }
         else {
-            log(expected_inverse.error());
+            print_matrix_error(expected_inverse.error());
             std::unreachable();
         }
     }
@@ -652,11 +665,11 @@ private:
         for (std::size_t column{0}; column < matrix_dims; ++column) {
             // cofactor of data[0][column]
 
-            if (auto expected_minor{minor(data, 0, column, matrix_dims)}; expected_minor.has_value()) {
+            if (auto expected_minor{matrix_wrapper::minor(data, 0, column, matrix_dims)}; expected_minor.has_value()) {
                 minor = std::move(expected_minor).value();
             }
             else {
-                log(expected_minor.error());
+                print_matrix_error(expected_minor.error());
                 std::unreachable();
             }
 
@@ -664,7 +677,7 @@ private:
                 det += sign * data[0][column] * std::move(expected_det).value();
             }
             else {
-                log(expected_det.error());
+                print_matrix_error(expected_det.error());
                 std::unreachable();
             }
 
@@ -719,11 +732,12 @@ private:
             for (std::size_t column{0}; column < matrix_dims; column++) {
                 // get cofactor of data[row][column]
 
-                if (auto expected_minor{minor(data, row, column, matrix_dims)}; expected_minor.has_value()) {
+                if (auto expected_minor{matrix_wrapper::minor(data, row, column, matrix_dims)};
+                    expected_minor.has_value()) {
                     minor = std::move(expected_minor).value();
                 }
                 else {
-                    log(expected_minor.error());
+                    print_matrix_error(expected_minor.error());
                     std::unreachable();
                 }
 
@@ -740,7 +754,7 @@ private:
                     complement[row][column] = (sign)*std::move(expected_det).value();
                 }
                 else {
-                    log(expected_det.error());
+                    print_matrix_error(expected_det.error());
                     std::unreachable();
                 }
             }
@@ -784,12 +798,12 @@ private:
                 return std::expected<matrix, matrix_error>{scale(adjoint, 1 / det)};
             }
             else {
-                log(expected_adjoint.error());
+                print_matrix_error(expected_adjoint.error());
                 std::unreachable();
             }
         }
         else {
-            log(expected_det.error());
+            print_matrix_error(expected_det.error());
             std::unreachable();
         }
     }
@@ -897,8 +911,7 @@ private:
         }
         // factor is 0 then return matrix of zeros
         else if (factor == 0) {
-            data.clear();
-            return data;
+            return make_matrix(data.size(), data[0].size());
         }
 
         auto scale{make_matrix(rows, columns)};

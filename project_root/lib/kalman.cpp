@@ -1,52 +1,53 @@
 #include "kalman.hpp"
-#include <cassert>
+#include <print>
 #include <utility>
 
-inline static void LOG(const auto* info)
+static constexpr void std::print(const char* info) noexcept
 {
     std::print(info);
 }
 
 kalman::kalman(const filter_model& filter, const measure_model& measure) :
+
+    states_{filter.inputs},
+    inputs_{filter.inputs},
     A_{filter.A},
     B_{filter.B},
+    u_{filter.u},
     P_{filter.P},
     Q_{filter.Q},
     x_{filter.x},
-    u_{filter.u},
+    measurements_{measure.measurements},
     H_{measure.H},
-    R_{measure.R},
-    S_{measure.S},
-    K_{measure.K},
     z_{measure.z},
+    R_{measure.R},
     y_{measure.z},
-    inputs_{filter.inputs},
-    states_{filter.inputs},
-    measurements_{measure.measurements}
+    S_{measure.S},
+    K_{measure.K}
 {
-    LOG("Initialized");
+    std::print("Initialized");
     assert(filter.states == measure.states);
     is_initialized_ = true;
 }
 
 kalman::kalman(filter_model&& filter, measure_model&& measure) :
+    states_{filter.inputs},
+    inputs_{filter.inputs},
     A_{std::move(filter.A)},
     B_{std::move(filter.B)},
+    u_{std::move(filter.u)},
     P_{std::move(filter.P)},
     Q_{std::move(filter.Q)},
     x_{std::move(filter.x)},
-    u_{std::move(filter.u)},
+    measurements_{measure.measurements},
     H_{std::move(measure.H)},
-    R_{std::move(measure.R)},
-    S_{std::move(measure.S)},
-    K_{std::move(measure.K)},
     z_{std::move(measure.z)},
+    R_{std::move(measure.R)},
     y_{std::move(measure.z)},
-    inputs_{filter.inputs},
-    states_{filter.inputs},
-    measurements_{measure.measurements}
+    S_{std::move(measure.S)},
+    K_{std::move(measure.K)}
 {
-    LOG("Initialized");
+    std::print("Initialized");
     assert(filter.states == measure.states);
     is_initialized_ = true;
 }
@@ -71,7 +72,7 @@ double kalman::current_time() const noexcept
     return current_time_;
 }
 
-void kalman::inputs(const matrix_wrapper<float>& inputs) noexcept
+void kalman::inputs(const matrix_wrapper<float>& inputs)
 {
     u_ = inputs;
 }
@@ -84,7 +85,7 @@ void kalman::inputs(matrix_wrapper<float>&& inputs) noexcept
 void kalman::predict() noexcept
 {
     if (!is_initialized_) {
-        LOG("Filter unitialized!");
+        std::print("Filter unitialized!");
         return;
     }
 
@@ -110,7 +111,7 @@ void kalman::predict() noexcept
 void kalman::update() noexcept
 {
     if (!is_initialized_) {
-        LOG("Filter unitialized!");
+        std::print("Filter unitialized!");
         return;
     }
 
