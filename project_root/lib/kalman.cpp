@@ -25,7 +25,7 @@ kalman::kalman(const filter_model& filter, const measure_model& measure) :
     is_initialized_ = true;
 }
 
-kalman::kalman(filter_model&& filter, measure_model&& measure) :
+kalman::kalman(filter_model&& filter, measure_model&& measure) noexcept :
     states_{filter.inputs},
     inputs_{filter.inputs},
     A_(std::move(filter.A)),
@@ -47,11 +47,6 @@ kalman::kalman(filter_model&& filter, measure_model&& measure) :
     is_initialized_ = true;
 }
 
-bool kalman::is_initialized() const noexcept
-{
-    return is_initialized_;
-}
-
 matrix_wrapper<float>&& kalman::state() && noexcept
 {
     return std::move(x_);
@@ -60,11 +55,6 @@ matrix_wrapper<float>&& kalman::state() && noexcept
 const matrix_wrapper<float>& kalman::state() const& noexcept
 {
     return x_;
-}
-
-double kalman::current_time() const noexcept
-{
-    return current_time_;
 }
 
 void kalman::inputs(const matrix_wrapper<float>& inputs)
@@ -77,7 +67,7 @@ void kalman::inputs(matrix_wrapper<float>&& inputs) noexcept
     u_ = std::forward<matrix_wrapper<float>>(inputs);
 }
 
-void kalman::predict() noexcept
+void kalman::predict()
 {
     if (!is_initialized_) {
         puts("Filter unitialized!");
@@ -103,7 +93,7 @@ void kalman::predict() noexcept
     P_ += ((B_ * Q_) * B_);
 }
 
-void kalman::update() noexcept
+void kalman::update()
 {
     if (!is_initialized_) {
         puts("Filter unitialized!");
@@ -149,4 +139,14 @@ void kalman::update() noexcept
 
     tempHP_ = H_ * P_;
     P_ -= K_ * tempHP_; // tempHP as operators run as compiler sees them (matrices mult order matters!!!)
+}
+
+void kalman::print_state() const noexcept
+{
+    x_.print();
+}
+
+void kalman::print_predicted() const noexcept
+{
+    xP_.print();
 }

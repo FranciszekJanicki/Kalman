@@ -57,6 +57,10 @@ public:
 
     void update();
 
+    void print_state() const noexcept;
+
+    void print_predicted() const noexcept;
+
 private:
     bool is_initialized_{false};
 
@@ -67,12 +71,12 @@ private:
     [[maybe_unused]] float start_time_{0.0f};
 
     // common model
-    size_t states_{1}; // number of filter outputs
+    [[maybe_unused]] size_t states_{1}; // number of filter outputs
 
     ///////////////////////////////////////////////////
 
     // filter model
-    size_t inputs_{1}; // number of filter inputs
+    [[maybe_unused]] size_t inputs_{1}; // number of filter inputs
 
     matrix_wrapper<float> A_{}; // state transition matrix (states_ x inputs_)
 
@@ -91,7 +95,7 @@ private:
     ///////////////////////////////////////////////////
 
     // measurement model
-    size_t measurements_{1}; // number of measerements performed
+    [[maybe_unused]] size_t measurements_{1}; // number of measerements performed
 
     matrix_wrapper<float> H_{}; // measurement transformation matrix (measurements_ x states_)
 
@@ -125,5 +129,3 @@ private:
 
     matrix_wrapper<float> tempKy_{};
 };
-
-#endif // KALMAN_HPP
