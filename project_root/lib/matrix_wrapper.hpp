@@ -11,6 +11,39 @@
 #include <utility>
 #include <vector>
 
+/* OVERVIEW:
+    -create matrixes of given sizes using matrix_wrapper::matrix_wrapper(...) constructors (round bracket
+   initialization) or using matrix_wrapper::ones(...), matrix_wrapper::zeros(...) and matrix_wrapper::eye(...)  factory
+   functions
+
+    -create matrixes of given data using matrix_wrapper::matrix_wrapper{...} constructors (curly bracket initialization)
+   or using matrix_wrapper::matrix(...), matrix_wrapper::row(...), matrix_wrapper::column(...) factory functions
+    (overloads with std::initializer_list, be careful, because {} init will always call these overloads)
+
+    -create row, column vectors  and diagonal matrixes with given data using matrix_wrapper::matrix_wrapper(tag, ...)
+    constructors (round bracket initialiation, first param being tag) or using matrix_wrapper::row(...),
+    matrix_wrapper::column(...) and matrix_wrapper::diagonal(...) factory functions
+
+    -assign data using operator= assingment operators or using matrix_wrapper::data(...) member functions
+    -access data using matrix() conversion operators or using matrix_wrapper::data() member functions
+
+    -transpose using matrix_wrapper::transpose() and invert using matrix_wrapper::inver() member functions (invertion
+    will fail if not possible)
+
+    -multiply matrix with matrix, multiply scalar with matrix and matrix with scalar,
+    divide matrix with matrix (same as multiplying by inverse), add matrixes, substract matrixes, of course all if
+    dimensions are correct for each of these operations
+
+    -you can print matrix using matrix_wrapper::print() member function
+
+    -full interface for data structure (std::vector<std::vector<type>> here)
+
+    -full constexpr support (remember that dynamic memory allocated at compile time, stays at compile time- if you want
+    to perform some matrix calculations at compile time and then get result to run time, use
+    std::array<std::array<type>> and copy from data (matrix_wrapper::data() accessors) to array, using
+    matrix_wrapper::rows() and matrix_wrapper::cols() to specify std::arrays dimensions)
+*/
+
 template <std::floating_point value_type>
 class matrix_wrapper {
 public:
@@ -54,6 +87,16 @@ public:
         return matrix_wrapper<value_type>{column_tag, column};
     }
 
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> row(const std::size_t rows)
+    {
+        return matrix_wrapper<value_type>{row_tag, rows};
+    }
+
+    [[nodiscard]] static constexpr matrix_wrapper<value_type> column(const std::size_t columns)
+    {
+        return matrix_wrapper<value_type>{column_tag, columns};
+    }
+
     [[nodiscard]] static constexpr matrix_wrapper<value_type> diagonal(const std::initializer_list<value_type> diagonal)
     {
         return matrix_wrapper<value_type>{diagonal_tag, diagonal};
@@ -93,6 +136,15 @@ public:
 
     constexpr matrix_wrapper([[maybe_unused]] const eye_t eye_tag, const std::size_t dimensions) :
         data_{make_eye(dimensions)}
+    {
+    }
+
+    constexpr matrix_wrapper([[maybe_unused]] const column_t column_tag, const std::size_t columns) :
+        data_{make_column(columns)}
+    {
+    }
+
+    constexpr matrix_wrapper([[maybe_unused]] const row_t row_tag, const std::size_t rows) : data_{make_row(rows)}
     {
     }
 
@@ -676,25 +728,49 @@ private:
         return matrix;
     }
 
+    static constexpr matrix make_row(const std::size_t rows)
+    {
+        vector row_vector{};
+        row_vector.reserve(rows);
+        for (std::size_t row{}; row < rows; ++row) {
+            row_vector.emplace_back();
+        }
+        return row_vector;
+    }
+
     static constexpr matrix make_row(const std::initializer_list<value_type> data)
     {
-        vector row{};
-        row.reserve(data.size());
-        for (const auto& column : row) {
-            row.push_back(column);
+        vector row_vector{};
+        const auto columns{data.size()};
+        row_vector.reserve(columns);
+        auto make_column{[column{data.begin()}]() -> decltype(auto) { return *(data)++; }};
+        for (std::size_t row{}; row < data.size(); ++row) {
+            row_vector.push_back(make_column());
         }
-        return row;
+        return row_vector;
+    }
+
+    static constexpr matrix make_column(const std::size_t columns)
+    {
+        matrix column_vector{};
+        auto& column{column_vector.emplace_back()};
+        column.reserve(columns);
+        for (std::size_t col{}; col < columns; ++col) {
+            column.emplace_back();
+        }
+        return column_vector;
     }
 
     static constexpr matrix make_column(const std::initializer_list<value_type> data)
     {
-        matrix column{};
-        auto& col{column.emplace_back()};
-        col.reserve(data.size());
-        for (const auto& row : column) {
-            col.push_back(row);
+        matrix column_vector{};
+        auto& column{column_vector.emplace_back()};
+        column.reserve(columns);
+        auto make_row{[row{data.begin()}]() -> decltype(auto) { return *(row)++; }};
+        for (std::size_t row{}; row < data.size(); ++row) {
+            row_vector.push_back(make_row());
         }
-        return column;
+        return column_vector;
     }
 
     static constexpr std::expected<matrix, matrix_error>
