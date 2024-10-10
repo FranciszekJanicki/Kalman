@@ -1,6 +1,6 @@
 add_library(Kalman STATIC 
         "kalman.cpp"
-        "matrix_wrapper.hpp"
+        "matrix.hpp"
 )
 
 target_include_directories(Kalman 

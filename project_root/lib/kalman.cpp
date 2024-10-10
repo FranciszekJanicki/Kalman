@@ -47,24 +47,24 @@ kalman::kalman(filter_model&& filter, measure_model&& measure) noexcept :
     is_initialized_ = true;
 }
 
-matrix_wrapper<float>&& kalman::state() && noexcept
+matrix<float>&& kalman::state() && noexcept
 {
     return std::move(x_);
 }
 
-const matrix_wrapper<float>& kalman::state() const& noexcept
+const matrix<float>& kalman::state() const& noexcept
 {
     return x_;
 }
 
-void kalman::inputs(const matrix_wrapper<float>& inputs)
+void kalman::inputs(const matrix<float>& inputs)
 {
     u_ = inputs;
 }
 
-void kalman::inputs(matrix_wrapper<float>&& inputs) noexcept
+void kalman::inputs(matrix<float>&& inputs) noexcept
 {
-    u_ = std::forward<matrix_wrapper<float>>(inputs);
+    u_ = std::forward<matrix<float>>(inputs);
 }
 
 void kalman::predict()

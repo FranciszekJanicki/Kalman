@@ -1,5 +1,5 @@
 #include "kalman.hpp"
-#include "matrix_wrapper.hpp"
+#include "matrix.hpp"
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char const* argv[])
 {
@@ -9,22 +9,22 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char const* argv[])
     kalman kalman_filter{filter_model{
                              states,
                              inputs,
-                             matrix_wrapper<float>::zeros(states, inputs),
-                             matrix_wrapper<float>::zeros(states, 1),
-                             matrix_wrapper<float>::zeros(states, inputs),
-                             matrix_wrapper<float>::zeros(inputs, 1),
-                             matrix_wrapper<float>::zeros(states, states),
-                             matrix_wrapper<float>::zeros(inputs, inputs),
+                             matrix<float>::ones(states, inputs),
+                             matrix<float>::ones(states, 1),
+                             matrix<float>::ones(states, inputs),
+                             matrix<float>::ones(inputs, 1),
+                             matrix<float>::ones(states, states),
+                             matrix<float>::ones(inputs, inputs),
                          },
                          measure_model{
                              states,
                              measurements,
-                             matrix_wrapper<float>::zeros(measurements, states),
-                             matrix_wrapper<float>::zeros(measurements, 1),
-                             matrix_wrapper<float>::zeros(measurements, measurements),
-                             matrix_wrapper<float>::zeros(measurements, 1),
-                             matrix_wrapper<float>::zeros(measurements, measurements),
-                             matrix_wrapper<float>::zeros(states, measurements),
+                             matrix<float>::ones(measurements, states),
+                             matrix<float>::ones(measurements, 1),
+                             matrix<float>::ones(measurements, measurements),
+                             matrix<float>::ones(measurements, 1),
+                             matrix<float>::ones(measurements, measurements),
+                             matrix<float>::ones(states, measurements),
                          }};
 
     const auto iterations{100};

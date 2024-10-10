@@ -1,24 +1,24 @@
 #ifndef KALMAN_HPP
 #define KALMAN_HPP
 
-#include "matrix_wrapper.hpp"
+#include "matrix.hpp"
 
 struct filter_model {
     std::size_t states{}; // number of filter units
 
     std::size_t inputs{}; // number of filter inputs
 
-    matrix_wrapper<float> A{}; // state transition matrix (numStates x numInputs)
+    matrix<float> A{}; // state transition matrix (numStates x numInputs)
 
-    matrix_wrapper<float> x{}; // state vector (numStates x 1)
+    matrix<float> x{}; // state vector_data (numStates x 1)
 
-    matrix_wrapper<float> B{}; // input transition matrix (numStates x numInputs)
+    matrix<float> B{}; // input transition matrix (numStates x numInputs)
 
-    matrix_wrapper<float> u{}; // input vector (numInputs x 1)
+    matrix<float> u{}; // input vector_data (numInputs x 1)
 
-    matrix_wrapper<float> P{}; // state covariance matrix (numStates x numStates)
+    matrix<float> P{}; // state covariance matrix (numStates x numStates)
 
-    matrix_wrapper<float> Q{}; // input covariance matrix (numInputs x numInputs)
+    matrix<float> Q{}; // input covariance matrix (numInputs x numInputs)
 };
 
 struct measure_model {
@@ -26,17 +26,17 @@ struct measure_model {
 
     std::size_t measurements{}; // number of meauserements performed
 
-    matrix_wrapper<float> H{}; // measurement transformation matrix (measurements x states)
+    matrix<float> H{}; // measurement transformation matrix (measurements x states)
 
-    matrix_wrapper<float> z{}; // measurement vector (numMeasures x  1)
+    matrix<float> z{}; // measurement vector_data (numMeasures x  1)
 
-    matrix_wrapper<float> R{}; // process noise (measurement uncertainty) (measurements x measurements)
+    matrix<float> R{}; // process noise (measurement uncertainty) (measurements x measurements)
 
-    matrix_wrapper<float> y{}; // innovation (measurements x 1)
+    matrix<float> y{}; // innovation (measurements x 1)
 
-    matrix_wrapper<float> S{}; // residual covariance (measurements x measurements)
+    matrix<float> S{}; // residual covariance (measurements x measurements)
 
-    matrix_wrapper<float> K{}; // kalman gain (states x measurements)
+    matrix<float> K{}; // kalman gain (states x measurements)
 };
 
 class kalman {
@@ -45,13 +45,13 @@ public:
 
     kalman(filter_model&& filter, measure_model&& measure) noexcept;
 
-    [[nodiscard]] matrix_wrapper<float>&& state() && noexcept;
+    [[nodiscard]] matrix<float>&& state() && noexcept;
 
-    [[nodiscard]] const matrix_wrapper<float>& state() const& noexcept;
+    [[nodiscard]] const matrix<float>& state() const& noexcept;
 
-    void inputs(const matrix_wrapper<float>& inputs);
+    void inputs(const matrix<float>& inputs);
 
-    void inputs(matrix_wrapper<float>&& inputs) noexcept;
+    void inputs(matrix<float>&& inputs) noexcept;
 
     void predict();
 
@@ -78,54 +78,56 @@ private:
     // filter model
     [[maybe_unused]] size_t inputs_{1}; // number of filter inputs
 
-    matrix_wrapper<float> A_{}; // state transition matrix (states_ x inputs_)
+    matrix<float> A_{}; // state transition matrix (states_ x inputs_)
 
-    matrix_wrapper<float> B_{}; // input transition matrix (states_ x inputs_)
+    matrix<float> B_{}; // input transition matrix (states_ x inputs_)
 
-    matrix_wrapper<float> u_{}; // input vector (inputs_ x 1)
+    matrix<float> u_{}; // input vector_data (inputs_ x 1)
 
-    matrix_wrapper<float> P_{}; // state covariance matrix (states_ x states_)
+    matrix<float> P_{}; // state covariance matrix (states_ x states_)
 
-    matrix_wrapper<float> Q_{}; // input covariance matrix (inputs_ x inputs_)
+    matrix<float> Q_{}; // input covariance matrix (inputs_ x inputs_)
 
-    matrix_wrapper<float> x_{}; // state vector (states_ x 1)
+    matrix<float> x_{}; // state vector_data (states_ x 1)
 
-    matrix_wrapper<float> xP_{}; // predicted state vector (states_ x 1)
+    matrix<float> xP_{}; // predicted state vector_data (states_ x 1)
 
     ///////////////////////////////////////////////////
 
     // measurement model
     [[maybe_unused]] size_t measurements_{1}; // number of measerements performed
 
-    matrix_wrapper<float> H_{}; // measurement transformation matrix (measurements_ x states_)
+    matrix<float> H_{}; // measurement transformation matrix (measurements_ x states_)
 
-    matrix_wrapper<float> z_{}; // measurement vector (measurements_ x  1)
+    matrix<float> z_{}; // measurement vector_data (measurements_ x  1)
 
-    matrix_wrapper<float> R_{}; // process noise (measurement uncertainty)
-                                // (measurements_ x measurements_)
+    matrix<float> R_{}; // process noise (measurement uncertainty)
+                        // (measurements_ x measurements_)
 
-    matrix_wrapper<float> y_{}; // innovation vector (measurements_ x 1)
+    matrix<float> y_{}; // innovation vector_data (measurements_ x 1)
 
-    matrix_wrapper<float> S_{}; // residual covariance (measurements_ x measurements_)
+    matrix<float> S_{}; // residual covariance (measurements_ x measurements_)
 
-    matrix_wrapper<float> K_{}; // kalman gain (states_ x measurements_)
+    matrix<float> K_{}; // kalman gain (states_ x measurements_)
 
     ///////////////////////////////////////////////////
 
     // temporary objects for move semantics (operators taking rvalue refs)
-    matrix_wrapper<float> tempBQ_{};
+    matrix<float> tempBQ_{};
 
-    matrix_wrapper<float> tempAP_{};
+    matrix<float> tempAP_{};
 
-    matrix_wrapper<float> tempHx_{};
+    matrix<float> tempHx_{};
 
-    matrix_wrapper<float> tempHP_{};
+    matrix<float> tempHP_{};
 
-    matrix_wrapper<float> tempH_{};
+    matrix<float> tempH_{};
 
-    matrix_wrapper<float> tempPHt_{};
+    matrix<float> tempPHt_{};
 
-    matrix_wrapper<float> tempS_{};
+    matrix<float> tempS_{};
 
-    matrix_wrapper<float> tempKy_{};
+    matrix<float> tempKy_{};
 };
+
+#endif // KALMAN_HPP
