@@ -23,7 +23,6 @@ AlignTrailingComments: true
 # Breaking and Wrapping Rules
 BinPackArguments: false
 BinPackParameters: false
-BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: false  
   AfterStruct: false
@@ -45,7 +44,6 @@ AllowShortLoopsOnASingleLine: false
 AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: Yes
 AlwaysBreakAfterReturnType: None
-ConstructorInitializerIndentWidth: 4
 ContinuationIndentWidth: 4
 
 BreakBeforeBraces: Custom

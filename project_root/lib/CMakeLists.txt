@@ -1,25 +1,28 @@
-add_library(Kalman STATIC 
+add_library(Kalman STATIC
         "kalman.cpp"
         "matrix.hpp"
+        "point3d.hpp"
+        "quaternion.hpp"
 )
 
-target_include_directories(Kalman 
-        PUBLIC 
+target_include_directories(Kalman
+        PUBLIC
         "."
 )
 
 set(CMAKE_CXX_STANDARD 23)
 
-target_compile_options(Kalman PRIVATE
-        -std=c++23
-        -Wall 
-        -Wextra 
+target_compile_options(Kalman PUBLIC
+        -std=c++2b
+        -fconcepts
+        -Wall
+        -Wextra
         -Wconversion
-        -Wshadow 
+        -Wshadow
         -Wpedantic
         -Wnarrowing
         -Waddress
-        -Wnon-virtual-dtor 
+        -Wnon-virtual-dtor
         -pedantic
         -Wpessimizing-move
         -Wsign-conversion
@@ -34,8 +37,3 @@ target_compile_options(Kalman PRIVATE
         -Wimplicit-fallthrough
         -Wcast-align
 )
-
-
-############### EIGEN LIB ################
-target_link_directories(Kalman PRIVATE eigen)
-target_link_libraries(Kalman PRIVATE eigen)

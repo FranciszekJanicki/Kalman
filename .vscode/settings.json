@@ -73,7 +73,15 @@
         "fft": "cpp",
         "cassert": "cpp",
         "matrixfunctions": "cpp",
-        "span": "cpp"
+        "span": "cpp",
+        "charconv": "cpp",
+        "format": "cpp",
+        "shared_mutex": "cpp",
+        "text_encoding": "cpp",
+        "variant": "cpp",
+        "print": "cpp",
+        "stdfloat": "cpp"
     },
-    "C_Cpp.errorSquiggles": "disabled"
+    "editor.formatOnSave": true,
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
 }
