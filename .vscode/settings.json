@@ -80,7 +80,8 @@
         "text_encoding": "cpp",
         "variant": "cpp",
         "print": "cpp",
-        "stdfloat": "cpp"
+        "stdfloat": "cpp",
+        "ranges": "cpp"
     },
     "editor.formatOnSave": true,
     "C_Cpp.default.compilerPath": "/usr/bin/g++",

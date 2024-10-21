@@ -1,6 +1,8 @@
+#include "dijkstra.hpp"
 #include "kalman.hpp"
 #include "matrix.hpp"
 #include "quaternion3d.hpp"
+#include "rotation3d.hpp"
 #include "vector3d.hpp"
 #include "vector6d.hpp"
 

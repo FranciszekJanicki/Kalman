@@ -5,6 +5,7 @@ add_library(Kalman STATIC
         "lib/vector6d.hpp"
         "lib/rotation3d.hpp"
         "lib/quaternion3d.hpp"
+        "lib/dijkstra.hpp"
 )
 target_include_directories(Kalman PUBLIC
         "lib"

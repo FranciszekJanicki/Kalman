@@ -70,8 +70,9 @@ namespace Linalg {
 
         constexpr Quaternion3D& operator*=(const Quaternion3D& other) noexcept
         {
-            auto& [left_w, left_x, left_y, left_z] = std::forward_as_tuple(this->w, this->x, this->y, this->z);
-            auto& [right_w, right_x, right_y, right_z] = std::forward_as_tuple(other.w, other.x, other.y, other.z);
+            const auto& [left_w, left_x, left_y, left_z] = std::forward_as_tuple(this->w, this->x, this->y, this->z);
+            const auto& [right_w, right_x, right_y, right_z] =
+                std::forward_as_tuple(other.w, other.x, other.y, other.z);
             this->w = left_w * right_w - left_x * right_x - left_y * right_y - left_z * right_z;
             this->x = left_w * right_x + left_x * right_w + left_y * right_z - left_z * right_y;
             this->y = left_w * right_y - left_x * right_z + left_y * right_w + left_z * right_x;
@@ -88,6 +89,37 @@ namespace Linalg {
     };
 
     template <Arithmetic Value>
+    [[nodiscard]] constexpr bool operator==(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
+    {
+        return left == right;
+    }
+    template <Arithmetic Value>
+    [[nodiscard]] constexpr bool operator>(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
+    {
+        return left > right;
+    }
+    template <Arithmetic Value>
+    [[nodiscard]] constexpr bool operator<(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
+    {
+        return left < right;
+    }
+    template <Arithmetic Value>
+    [[nodiscard]] constexpr bool operator>=(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
+    {
+        return left >= right;
+    }
+    template <Arithmetic Value>
+    [[nodiscard]] constexpr bool operator<=(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
+    {
+        return left <= right;
+    }
+    template <Arithmetic Value>
+    [[nodiscard]] constexpr bool operator!=(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
+    {
+        return left != right;
+    }
+
+    template <Arithmetic Value>
     constexpr auto operator+(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
     {
         return Quaternion3D<Value>{left.w + right.w, left.x + right.x, left.y + right.y, left.z + right.z};
@@ -102,8 +134,8 @@ namespace Linalg {
     template <Arithmetic Value>
     constexpr auto operator*(const Quaternion3D<Value>& left, const Quaternion3D<Value>& other) noexcept
     {
-        auto [left_w, left_x, left_y, left_z] = std::forward_as_tuple(left.w, left.x, left.y, left.z);
-        auto [right_w, right_x, right_y, right_z] = std::forward_as_tuple(other.w, other.x, other.y, other.z);
+        const auto& [left_w, left_x, left_y, left_z] = std::forward_as_tuple(left.w, left.x, left.y, left.z);
+        const auto& [right_w, right_x, right_y, right_z] = std::forward_as_tuple(other.w, other.x, other.y, other.z);
         return Quaternion3D<Value>{left_w * right_w - left_x * right_x - left_y * right_y - left_z * right_z,
                                    left_w * right_x + left_x * right_w + left_y * right_z - left_z * right_y,
                                    left_w * right_y - left_x * right_z + left_y * right_w + left_z * right_x,
