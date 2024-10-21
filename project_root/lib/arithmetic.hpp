@@ -4,11 +4,11 @@
 #include <concepts>
 #include <type_traits>
 
-namespace lib {
+namespace Linalg {
 
-    template <typename type>
-    concept arithmetic = std::is_arithmetic_v<type>;
+    template <typename Type>
+    concept Arithmetic = std::is_arithmetic_v<Type>;
 
-}; // namespace lib
+}; // namespace Linalg
 
 #endif // ARITHMETIC_HPP

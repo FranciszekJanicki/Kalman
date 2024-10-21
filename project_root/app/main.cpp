@@ -1,31 +1,32 @@
 #include "kalman.hpp"
 #include "matrix.hpp"
-#include "point3d.hpp"
-#include "quaternion.hpp"
+#include "vector3d.hpp"
+#include "vector6d.hpp"
+#include "quaternion3d.hpp"
 
-using namespace lib;
+using Matrix = Linalg::Matrix;
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char const* argv[])
 {
     const std::size_t states{2};
     const std::size_t measurements{2};
     const std::size_t inputs{2};
-    kalman kalman_filter{filter_model{states,
-                                      inputs,
-                                      matrix<float>::ones(states, inputs),
-                                      matrix<float>::ones(states, 1),
-                                      matrix<float>::ones(states, inputs),
-                                      matrix<float>::ones(inputs, 1),
-                                      matrix<float>::ones(states, states),
-                                      matrix<float>::ones(inputs, inputs)},
-                         measure_model{states,
-                                       measurements,
-                                       matrix<float>::ones(measurements, states),
-                                       matrix<float>::ones(measurements, 1),
-                                       matrix<float>::ones(measurements, measurements),
-                                       matrix<float>::ones(measurements, 1),
-                                       matrix<float>::ones(measurements, measurements),
-                                       matrix<float>::ones(states, measurements)}};
+    Kalman kalman{filter_model{states,
+                               inputs,
+                                Matrix::ones(states, inputs),
+                                Matrix::ones(states, 1),
+                                Matrix::ones(states, inputs),
+                                Matrix::ones(inputs, 1),
+                                Matrix::ones(states, states),
+                                Matrix::ones(inputs, inputs)},
+                    measure_model{states,
+                                measurements,
+                                Matrix::ones(measurements, states),
+                                Matrix::ones(measurements, 1),
+                                Matrix::ones(measurements, measurements),
+                                Matrix::ones(measurements, 1),
+                                Matrix::ones(measurements, measurements),
+                                Matrix::ones(states, measurements)}};
 
     const auto iterations{100};
     auto i{0};
@@ -36,8 +37,9 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char const* argv[])
         kalman_filter.print_state();
     }
 
-    point3D dupa1{1, 2, 3};
-    quaternion dupa2{0, 1, 2, 3};
+    Vector3D dupa{1, 2, 3};
+    Vector6D dupa1{1, 2, 3, 4, 5, 6};
+    Quaternion3D dupa2{0, 1, 2, 3};
 
     return 0;
 }

@@ -1,11 +1,11 @@
-#include "kalman.hpp"
+#include "Kalman.hpp"
 #include <cassert>
 #include <print>
 #include <utility>
 
 namespace lib {
 
-    void kalman::initialize() noexcept
+    void Kalman::initialize() noexcept
     {
         std::print("Checking correct dimensions");
         assert(A_.rows() == states_);
@@ -36,7 +36,7 @@ namespace lib {
         is_initialized_ = true;
     }
 
-    kalman::kalman(const filter_model& filter, const measure_model& measure) :
+    Kalman::Kalman(const FilterModel& filter, const MeasureModel& measure) :
 
         states_{filter.inputs},
         inputs_{filter.inputs},
@@ -57,47 +57,47 @@ namespace lib {
         initialize();
     }
 
-    kalman::kalman(filter_model&& filter, measure_model&& measure) noexcept :
+    Kalman::Kalman(FilterModel&& filter, MeasureModel&& measure) noexcept :
         states_{filter.inputs},
         inputs_{filter.inputs},
         measurements_{measure.measurements},
-        A_(std::move(filter.A)),
-        B_(std::move(filter.B)),
-        u_(std::move(filter.u)),
-        P_(std::move(filter.P)),
-        Q_(std::move(filter.Q)),
-        x_(std::move(filter.x)),
-        H_(std::move(measure.H)),
-        z_(std::move(measure.z)),
-        R_(std::move(measure.R)),
-        y_(std::move(measure.z)),
-        S_(std::move(measure.S)),
-        K_(std::move(measure.K))
+        A_(std::forward<FilterModel>(filter).A),
+        B_(std::forward<FilterModel>(filter).B),
+        u_(std::forward<FilterModel>(filter).u),
+        P_(std::forward<FilterModel>(filter).P),
+        Q_(std::forward<FilterModel>(filter).Q),
+        x_(std::forward<FilterModel>(filter).x),
+        H_(std::forward<MeasureModel>(measure).H)),
+        z_(std::forward<MeasureModel>(measure).z)),
+        R_(std::forward<MeasureModel>(measure).R)),
+        y_(std::forward<MeasureModel>(measure).z)),
+        S_(std::forward<MeasureModel>(measure).S)),
+        K_(std::forward<MeasureModel>(measure).K))
     {
         initialize();
     }
 
-    matrix<float>&& kalman::state() && noexcept
+    Matrix&& Kalman::state() && noexcept
     {
-        return std::move(x_);
+        return std::forward<Kalman>(*this).x_;
     }
 
-    const matrix<float>& kalman::state() const& noexcept
+    const Matrix& Kalman::state() const& noexcept
     {
         return x_;
     }
 
-    void kalman::inputs(const matrix<float>& inputs)
+    void Kalman::inputs(const Matrix& inputs)
     {
         u_ = inputs;
     }
 
-    void kalman::inputs(matrix<float>&& inputs) noexcept
+    void Kalman::inputs(Matrix&& inputs) noexcept
     {
-        u_ = std::forward<matrix<float>>(inputs);
+        u_ = std::forward<Matrix>(inputs);
     }
 
-    void kalman::predict()
+    void Kalman::predict()
     {
         if (!is_initialized_) {
             std::print("Filter unitialized!");
@@ -123,7 +123,7 @@ namespace lib {
         P_ += ((B_ * Q_) * B_);
     }
 
-    void kalman::update()
+    void Kalman::update()
     {
         if (!is_initialized_) {
             std::print("Filter unitialized!");
@@ -146,7 +146,7 @@ namespace lib {
 
         /*************************/
 
-        /* calculate kalman gain */
+        /* calculate Kalman gain */
         // K = P*H' * S^-1
 
         tempS_ = S_;
@@ -171,12 +171,12 @@ namespace lib {
         P_ -= K_ * tempHP_; // tempHP as operators run as compiler sees them (matrices mult order matters!!!)
     }
 
-    void kalman::print_state() const noexcept
+    void Kalman::print_state() const noexcept
     {
         x_.print();
     }
 
-    void kalman::print_predicted() const noexcept
+    void Kalman::print_predicted() const noexcept
     {
         xP_.print();
     }
