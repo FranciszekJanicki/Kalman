@@ -2,7 +2,9 @@
 #define KALMAN_HPP
 
 #include "matrix.hpp"
+#include <stdfloat>
 
+using Matrix = Linalg::Matrix<std::float64_t>;
 
 struct FilterModel {
     std::size_t states{}; // number of filter units
@@ -17,7 +19,7 @@ struct FilterModel {
 };
 
 struct MeasureModel {
-    std::size_t states{}; // number of filter units
+    std::size_t states{};       // number of filter units
     std::size_t measurements{}; // number of meauserements performed
 
     Matrix H{}; // measurement transformation matrix (measurements x states)
@@ -30,8 +32,6 @@ struct MeasureModel {
 
 class Kalman {
 public:
-    using Matrix = Matrix;
-
     Kalman(const FilterModel& filter, const MeasureModel& measure);
     Kalman(FilterModel&& filter, MeasureModel&& measure) noexcept;
 

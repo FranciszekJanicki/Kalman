@@ -5,8 +5,8 @@
 #include <cmath>
 #include <compare>
 #include <cstdlib>
+#include <fmt/core.h>
 #include <tuple>
-// #include <fmt/core.h>
 #include <utility>
 
 namespace Linalg {
@@ -45,10 +45,10 @@ namespace Linalg {
             z *= im;
         }
 
-        // constexpr void print() const noexcept
-        // {
-        //    fmt::print("a: {}, b: {}, c: {}, w: {}\n", x, y, z, w);
-        //}
+        constexpr void print() const noexcept
+        {
+            fmt::print("a: {}, b: {}, c: {}, w: {}\n", x, y, z, w);
+        }
 
         constexpr Quaternion3D& operator+=(const Quaternion3D& other) noexcept
         {

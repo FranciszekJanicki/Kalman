@@ -1,17 +1,18 @@
 #ifndef VECTOR6D_HPP
 #define VECTOR6D_HPP
 
-#include <utility>
-#include "Vector6D.hpp"
 #include "arithmetic.hpp"
-#include <functional>
+#include "vector3d.hpp"
+#include <cmath>
 #include <compare>
+#include <fmt/core.h>
+#include <functional>
+#include <utility>
 
 namespace Linalg {
 
     template <Arithmetic Value>
     struct Vector6D {
-
         [[nodiscard]] constexpr auto distance(const Vector6D& other) const noexcept
         {
             return this->orientation.distance(other.orientation);
@@ -19,58 +20,71 @@ namespace Linalg {
 
         [[nodiscard]] constexpr auto magnitude() const noexcept
         {
-            return this->orientation.magnitude() + this->position.magnitude();
+            return std::sqrt(std::pow(this->orientation.magnitude(), 2) + std::pow(this->position.magnitude(), 2));
         }
 
         [[nodiscard]] constexpr Vector6D normalized() const noexcept
         {
-            const auto im{static_cast<Value>(1) / magnitude()};
-            return Vector6D{position * im, orientation * im};
+            return Vector6D{position.normalized(), orientation.normalized()};
         }
 
         constexpr void normalize() noexcept
         {
-            const auto im{static_cast<Value>(1) / magnitude()};
-            position *= im;
-            orientation *= im;
+            position.normalize();
+            orientation.normalize();
         }
 
+        constexpr void print() const noexcept
+        {
+            position.print();
+            orientation.print();
+        }
 
-        constexpr operator+=(const Vector6D& other) noexcept {
+        constexpr Vector6D& operator+=(const Vector6D& other) noexcept
+        {
             this->position += other.position;
-            this->orientation += other.orientation;   
+            this->orientation += other.orientation;
+            return *this;
         }
 
-        constexpr operator-=(const Vector6D& other) noexcept {
-                this->position -= other.position;
-                this->orientation -= other.orientation;
+        constexpr Vector6D& operator-=(const Vector6D& other) noexcept
+        {
+            this->position -= other.position;
+            this->orientation -= other.orientation;
+            return *this;
         }
 
-        constexpr operator*=(const Vector6D& other) noexcept {
-                this->position *= other.position;
-                this->orientation *= other.orientation;
+        constexpr Vector6D& operator*=(const Vector6D& other) noexcept
+        {
+            this->position *= other.position;
+            this->orientation *= other.orientation;
+            return *this;
         }
-        constexpr operator*=(const Value factor) noexcept {
+        constexpr Vector6D& operator*=(const Value factor) noexcept
+        {
             this->position *= factor;
             this->operation *= factor;
+            return *this;
         }
 
-        constexpr operator/=(const Vector6D& other) noexcept {
-                this->position /= other.position;
-                this->orientation /= other.orientation;
+        constexpr Vector6D& operator/=(const Vector6D& other) noexcept
+        {
+            this->position /= other.position;
+            this->orientation /= other.orientation;
+            return *this;
         }
-        constexpr operator/=(const Value factor) noexcept {
+        constexpr Vector6D& operator/=(const Value factor) noexcept
+        {
             this->position /= factor;
             this->operation /= factor;
+            return *this;
         }
 
         [[nodiscard]] constexpr bool operator<=>(const Vector6D& other) const noexcept = default;
 
-
-        Vector6D<Value> position{};
-        Vector6D<Value> orientation{};
+        Vector3D<Value> position{};
+        Vector3D<Value> orientation{};
     };
-
 
     template <Arithmetic Value>
     constexpr auto operator+(const Vector6D<Value>& left, const Vector6D<Value>& right) noexcept
@@ -89,19 +103,11 @@ namespace Linalg {
     {
         return Vector6D<Value>{left.position * right.position, left.orientation * right.orientation};
     }
-
-    template <Arithmetic Value>
-    constexpr auto operator/(const Vector6D<Value>& left, const Vector6D<Value>& right) noexcept
-    {
-        return Vector6D{left.position / right.position, left.orientation / right.orientation};
-    }
-
     template <Arithmetic Value>
     constexpr auto operator*(const Value factor, const Vector6D<Value>& vector) noexcept
     {
-        return Vector6D<Value>{vector.position * factor, vector.orientation + right.orientation};
+        return Vector6D<Value>{vector.position * factor, vector.orientation * factor};
     }
-
     template <Arithmetic Value>
     constexpr auto operator*(const Vector6D<Value>& vector, const Value factor) noexcept
     {
@@ -109,12 +115,16 @@ namespace Linalg {
     }
 
     template <Arithmetic Value>
+    constexpr auto operator/(const Vector6D<Value>& left, const Vector6D<Value>& right) noexcept
+    {
+        return Vector6D{left.position / right.position, left.orientation / right.orientation};
+    }
+    template <Arithmetic Value>
     constexpr auto operator/(const Vector6D<Value>& vector, const Value factor) noexcept
     {
         return Vector6D<Value>{vector.position / factor, vector.orientation / factor};
     }
 
-
-} // Linalg;
+} // namespace Linalg
 
 #endif // VECTOR6D_HPP
