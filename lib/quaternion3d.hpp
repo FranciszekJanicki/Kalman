@@ -5,7 +5,6 @@
 #include <cmath>
 #include <compare>
 #include <cstdlib>
-#include <fmt/core.h>
 #include <tuple>
 #include <utility>
 
@@ -43,11 +42,6 @@ namespace Linalg {
             x *= im;
             y *= im;
             z *= im;
-        }
-
-        constexpr void print() const noexcept
-        {
-            fmt::print("a: {}, b: {}, c: {}, w: {}\n", x, y, z, w);
         }
 
         constexpr Quaternion3D& operator+=(const Quaternion3D& other) noexcept
@@ -89,37 +83,6 @@ namespace Linalg {
     };
 
     template <Arithmetic Value>
-    [[nodiscard]] constexpr bool operator==(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
-    {
-        return left == right;
-    }
-    template <Arithmetic Value>
-    [[nodiscard]] constexpr bool operator>(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
-    {
-        return left > right;
-    }
-    template <Arithmetic Value>
-    [[nodiscard]] constexpr bool operator<(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
-    {
-        return left < right;
-    }
-    template <Arithmetic Value>
-    [[nodiscard]] constexpr bool operator>=(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
-    {
-        return left >= right;
-    }
-    template <Arithmetic Value>
-    [[nodiscard]] constexpr bool operator<=(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
-    {
-        return left <= right;
-    }
-    template <Arithmetic Value>
-    [[nodiscard]] constexpr bool operator!=(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
-    {
-        return left != right;
-    }
-
-    template <Arithmetic Value>
     constexpr auto operator+(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
     {
         return Quaternion3D<Value>{left.w + right.w, left.x + right.x, left.y + right.y, left.z + right.z};
@@ -128,7 +91,7 @@ namespace Linalg {
     template <Arithmetic Value>
     constexpr auto operator-(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
     {
-        return Quaternion3D{left.w - right.w, left.x - right.x, left.y - right.y, left.z + right.z};
+        return Quaternion3D<Value>{left.w - right.w, left.x - right.x, left.y - right.y, left.z + right.z};
     }
 
     template <Arithmetic Value>

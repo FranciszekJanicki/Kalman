@@ -4,7 +4,6 @@
 #include "arithmetic.hpp"
 #include <cmath>
 #include <compare>
-#include <fmt/core.h>
 #include <quaternion3d.hpp>
 #include <utility>
 
@@ -43,21 +42,16 @@ namespace Linalg {
 
         [[nodiscard]] constexpr Vector3D normalized() const noexcept
         {
-            const auto im{static_cast<Value>(1) / magnitude()};
+            const auto im{Value{1} / magnitude()};
             return Vector3D{x * im, y * im, z * im};
         }
 
         constexpr void normalize() noexcept
         {
-            const auto im{static_cast<Value>(1) / magnitude()};
+            const auto im{Value{1} / magnitude()};
             x *= im;
             y *= im;
             z *= im;
-        }
-
-        constexpr void print() const noexcept
-        {
-            fmt::print("a: {}, b: {}, c: {}, w: {}\n", x, y, z);
         }
 
         constexpr Vector3D& operator+=(const Vector3D& other) noexcept
@@ -138,13 +132,13 @@ namespace Linalg {
     template <Arithmetic Value>
     constexpr auto operator*(const Vector3D<Value>& vector, const Value factor) noexcept
     {
-        return Vector3D{vector.x + factor, vector.y + factor, vector.z + factor};
+        return Vector3D<Value>{vector.x * factor, vector.y * factor, vector.z * factor};
     }
 
     template <Arithmetic Value>
     constexpr auto operator/(const Vector3D<Value>& left, const Vector3D<Value>& right) noexcept
     {
-        return Vector3D{left.x / right.x, left.y / right.y, left.z / right.z};
+        return Vector3D<Value>{left.x / right.x, left.y / right.y, left.z / right.z};
     }
     template <Arithmetic Value>
     constexpr auto operator/(const Vector3D<Value>& vector, const Value factor) noexcept

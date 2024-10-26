@@ -6,7 +6,6 @@
 #include <cmath>
 #include <compare>
 #include <cstdlib>
-#include <fmt/core.h>
 #include <utility>
 #include <vector3d.hpp>
 
@@ -14,12 +13,6 @@ namespace Linalg {
 
     template <Arithmetic Value>
     struct Rotation3D {
-        constexpr void print() const noexcept
-        {
-            x.print();
-            y.print();
-            z.print();
-        }
         constexpr Rotation3D& operator+=(const Rotation3D& other) noexcept
         {
             this->x += other.x;

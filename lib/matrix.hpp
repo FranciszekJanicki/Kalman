@@ -48,10 +48,18 @@
 namespace Linalg {
 
     template <Arithmetic Value>
-    class Matrix {
+    struct Matrix {
     public:
+        enum struct MatrixError {
+            WRONG_DIMS,
+            SINGULARITY,
+            BAD_ALLOC,
+        };
+
         using VectorData = std::vector<Value>;
         using MatrixData = std::vector<std::vector<Value>>;
+        using ExpectedMatrixData = std::expected<MatrixData, MatrixError>;
+        using Unexpected = std::unexpected<MatrixError>;
 
         [[nodiscard]] static constexpr Matrix row(const std::initializer_list<Value> row)
         {
@@ -166,7 +174,7 @@ namespace Linalg {
             // assert correct dimensions
             assert(this->columns() == other.rows());
 
-            if (auto expected_product{product(this->data_, other.data_)}; expected_product.has_value()) {
+            if (auto expected_product{Matrix::product(this->data_, other.data_)}; expected_product.has_value()) {
                 this->data_ = std::move(expected_product).value();
                 return *this;
             } else {
@@ -494,20 +502,14 @@ namespace Linalg {
         }
 
     private:
-        enum class MatrixError {
-            wrong_dims,
-            singularity,
-            bad_alloc,
-        };
-
         static constexpr const char* matrix_error_to_string(const MatrixError MatrixError) noexcept
         {
             switch (MatrixError) {
-                case MatrixError::wrong_dims:
+                case MatrixError::WRONG_DIMS:
                     return "Wrong dims";
-                case MatrixError::singularity:
+                case MatrixError::SINGULARITY:
                     return "Singularity";
-                case MatrixError::bad_alloc:
+                case MatrixError::BAD_ALLOC:
                     return "Bad alloc";
                 default:
                     return "None";
@@ -669,7 +671,7 @@ namespace Linalg {
             return column_vector;
         }
 
-        static constexpr std::expected<MatrixData, MatrixError>
+        static constexpr ExpectedMatrixData
         minor(const MatrixData& data, const std::size_t row, const std::size_t column, const std::size_t dimensions)
         {
             const std::size_t rows{data.size()};
@@ -677,16 +679,16 @@ namespace Linalg {
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
             // assert cofactor isnt calculated for minor bigger than data
             assert(dimensions <= row && dimensions <= column);
             if (dimensions > row || dimensions > column) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
             // minor is scalar, can omit later code
             if (dimensions == 0) {
-                return std::expected<MatrixData, MatrixError>{data};
+                return ExpectedMatrixData{data};
             }
 
             auto minor{make_zeros(dimensions, dimensions)};
@@ -706,7 +708,7 @@ namespace Linalg {
                     }
                 }
             }
-            return std::expected<MatrixData, MatrixError>{std::move(minor)};
+            return ExpectedMatrixData{std::move(minor)};
         }
 
         static constexpr std::expected<Value, MatrixError> determinant(const MatrixData& data, std::size_t dimensions)
@@ -716,13 +718,13 @@ namespace Linalg {
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
 
             // assert minor isnt bigger than data
             assert(rows >= dimensions && columns >= dimensions);
             if (rows < dimensions || columns < dimensions) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
 
             // data is scalar, can omit later code
@@ -782,21 +784,21 @@ namespace Linalg {
             return transposition;
         }
 
-        static constexpr std::expected<MatrixData, MatrixError> adjoint(const MatrixData& data)
+        static constexpr ExpectedMatrixData adjoint(const MatrixData& data)
         {
             const std::size_t rows{data.size()};
             const std::size_t columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
 
             // matrixsquare
             const std::size_t dimensions{rows};
             // data is scalar, can omit later code
             if (dimensions == 1) {
-                return std::expected<MatrixData, MatrixError>{data};
+                return ExpectedMatrixData{data};
             }
 
             auto complement{make_zeros(dimensions, dimensions)};
@@ -833,24 +835,24 @@ namespace Linalg {
             }
 
             // adjostd::size_t is transposed of complement matrix
-            return std::expected<MatrixData, MatrixError>{transposition(complement)};
+            return ExpectedMatrixData{transposition(complement)};
         }
 
-        static constexpr std::expected<MatrixData, MatrixError> inverse(const MatrixData& data)
+        static constexpr ExpectedMatrixData inverse(const MatrixData& data)
         {
             const std::size_t rows{data.size()};
             const std::size_t columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
 
             // matrixsquare
             const std::size_t dimensions{rows};
             // data is scalar, can omit later code
             if (dimensions == 1) {
-                return std::expected<MatrixData, MatrixError>{data};
+                return ExpectedMatrixData{data};
             }
 
             if (auto expected_det{determinant(data, dimensions)}; expected_det.has_value()) {
@@ -859,7 +861,7 @@ namespace Linalg {
                 // assert correct determinant
                 assert(det != 0);
                 if (det == 0) {
-                    return std::unexpected<MatrixError>{MatrixError::singularity};
+                    return Unexpected{MatrixError::SINGULARITY};
                 }
 
                 if (auto expected_adjoint{adjoint(data)}; expected_adjoint.has_value()) {
@@ -867,7 +869,7 @@ namespace Linalg {
 
                     // inverse is adjoint matrixdivided by det factor
                     // division is multiplication by inverse
-                    return std::expected<MatrixData, MatrixError>{scale(adjoint, 1 / det)};
+                    return ExpectedMatrixData{scale(adjoint, 1 / det)};
                 } else {
                     print_error(expected_adjoint.error());
                     std::unreachable();
@@ -878,41 +880,41 @@ namespace Linalg {
             }
         }
 
-        static constexpr std::expected<MatrixData, MatrixError> upper_triangular(const MatrixData& data)
+        static constexpr ExpectedMatrixData upper_triangular(const MatrixData& data)
         {
             const std::size_t rows{data.size()};
             const std::size_t columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
 
             // matrixsquare
             const std::size_t dimensions{rows};
             // data is scalar
             if (dimensions == 1)
-                return std::expected<MatrixData, MatrixError>{data};
+                return ExpectedMatrixData{data};
 
             // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
-            return std::expected<MatrixData, MatrixError>{transposition(lower_triangular(data))};
+            return ExpectedMatrixData{transposition(lower_triangular(data))};
         }
 
-        static constexpr std::expected<MatrixData, MatrixError> lower_triangular(const MatrixData& data)
+        static constexpr ExpectedMatrixData lower_triangular(const MatrixData& data)
         {
             const std::size_t rows{data.size()};
             const std::size_t columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
 
             // matrixsquare
             const std::size_t dimensions = rows; // = columns;
             // data is scalar
             if (dimensions == 1) {
-                return std::expected<MatrixData, MatrixError>{data};
+                return ExpectedMatrixData{data};
             }
 
             auto lower_triangular{make_zeros(dimensions, dimensions)};
@@ -937,10 +939,10 @@ namespace Linalg {
                     }
                 }
             }
-            return std::expected<MatrixData, MatrixError>{std::move(lower_triangular)};
+            return ExpectedMatrixData{std::move(lower_triangular)};
         }
 
-        static constexpr std::expected<MatrixData, MatrixError> product(const MatrixData& left, const MatrixData& right)
+        static constexpr ExpectedMatrixData product(const MatrixData& left, const MatrixData& right)
         {
             const std::size_t left_rows{left.size()};
             const std::size_t right_rows{right.size()};
@@ -950,7 +952,7 @@ namespace Linalg {
             // assert correct dimensions
             assert(left_columns == right_rows);
             if (left_columns != right_rows) {
-                return std::unexpected<MatrixError>{MatrixError::wrong_dims};
+                return Unexpected{MatrixError::WRONG_DIMS};
             }
 
             const std::size_t product_rows{left_rows};
@@ -966,7 +968,7 @@ namespace Linalg {
                     product[left_row][right_column] = sum;
                 }
             }
-            return std::expected<MatrixData, MatrixError>{std::move(product)};
+            return ExpectedMatrixData{std::move(product)};
         }
 
         static constexpr MatrixData sum(const MatrixData& left, const MatrixData& right) noexcept

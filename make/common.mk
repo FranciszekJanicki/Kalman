@@ -1,6 +1,0 @@
-PROJECT_DIR := $(shell pwd)
-PROJECT_ROOT_DIR := ${PROJECT_DIR}/project_root
-THIRD_PARTY_DIR := ${PROJECT_ROOT_DIR}/third_party
-BUILD_DIR := ${PROJECT_DIR}/build
-LIB_DIR := ${PROJECT_ROOT_DIR}/lib
-APP_DIR := ${PROJECT_ROOT_DIR }/app
