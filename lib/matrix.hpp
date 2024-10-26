@@ -65,6 +65,7 @@ namespace Linalg {
         {
             return Matrix{make_row(row)};
         }
+
         [[nodiscard]] static constexpr Matrix row(const std::size_t rows)
         {
             return Matrix{make_row(rows)};
@@ -74,6 +75,7 @@ namespace Linalg {
         {
             return Matrix{make_column(column)};
         }
+
         [[nodiscard]] static constexpr Matrix column(const std::size_t columns)
         {
             return Matrix{make_column(columns)};
@@ -104,28 +106,34 @@ namespace Linalg {
         explicit constexpr Matrix(const std::initializer_list<const std::initializer_list<Value>> data) : data_{data}
         {
         }
+
         constexpr Matrix(const std::size_t rows, const std::size_t columns) : data_{make_zeros(rows, columns)}
         {
         }
+
         explicit constexpr Matrix(MatrixData&& data) noexcept : data_{std::forward<MatrixData>(data)}
         {
         }
+
         explicit constexpr Matrix(const MatrixData& data) : data_{data}
         {
         }
 
         constexpr Matrix(const Matrix& other) = default;
+
         constexpr Matrix(Matrix&& other) noexcept = default;
 
         constexpr ~Matrix() noexcept = default;
 
         constexpr Matrix& operator=(const Matrix& other) = default;
+
         constexpr Matrix& operator=(Matrix&& other) noexcept = default;
 
         constexpr void operator=(MatrixData&& data) noexcept
         {
             this->data_ = std::forward<MatrixData>(data);
         }
+
         constexpr void operator=(const MatrixData& data)
         {
             this->data_ = data;
@@ -169,6 +177,7 @@ namespace Linalg {
             this->data_ = scale(this->data_, factor);
             return *this;
         }
+
         constexpr Matrix& operator*=(const Matrix& other)
         {
             // assert correct dimensions
@@ -197,6 +206,7 @@ namespace Linalg {
             this->data_ = scale(this->data_, 1 / factor);
             return *this;
         }
+
         constexpr Matrix& operator/=(const Matrix& other)
         {
             // assert correct dimensions
@@ -245,6 +255,7 @@ namespace Linalg {
 
             return Matrix{scale(matrix.data_, factor)};
         }
+
         friend constexpr Matrix operator*(const Matrix& matrix, const Value& factor)
         {
             // factor is 1 then dont need to do anything
@@ -254,6 +265,7 @@ namespace Linalg {
 
             return Matrix{scale(matrix.data_, factor)};
         }
+
         friend constexpr Matrix operator*(const Matrix& left, const Matrix& right)
         {
             // assert correct dimensions
@@ -280,6 +292,7 @@ namespace Linalg {
             // division is multiplication by inverse
             return Matrix{scale(matrix.data_, 1 / factor)};
         }
+
         friend constexpr Matrix operator/(const Matrix& left, const Matrix& right)
         {
             // assert correct dimensions
@@ -303,6 +316,7 @@ namespace Linalg {
         {
             return std::forward<Matrix>(*this).data_;
         }
+
         explicit constexpr operator MatrixData() const& noexcept
         {
             return this->data_;
@@ -313,17 +327,20 @@ namespace Linalg {
             assert(row <= this->rows());
             return this->data_[row];
         }
+
         [[nodiscard]] constexpr VectorData& operator[](const std::size_t row) noexcept
         {
             assert(row <= this->rows());
             return this->data_[row];
         }
+
         [[nodiscard]] constexpr Value& operator[](const std::size_t row, const std::size_t column) noexcept
         {
             assert(row <= this->rows());
             assert(column <= this->columns());
             return this->data_[row][column];
         }
+
         [[nodiscard]] constexpr const Value& operator[](const std::size_t row, const std::size_t column) const noexcept
         {
             assert(row <= this->rows());
@@ -342,6 +359,7 @@ namespace Linalg {
         {
             return this->data_;
         }
+
         [[nodiscard]] constexpr MatrixData&& data() && noexcept
         {
             return std::forward<Matrix>(*this).data_;
@@ -351,6 +369,7 @@ namespace Linalg {
         {
             this->data_ = std::forward<MatrixData>(data);
         }
+
         constexpr void data(const MatrixData& data)
         {
             this->data_ = data;
@@ -393,6 +412,7 @@ namespace Linalg {
         {
             return this->data_.back();
         }
+
         constexpr VectorData& end_row() noexcept
         {
             return this->data_.back();
@@ -402,6 +422,7 @@ namespace Linalg {
         {
             return this->data_.front();
         }
+
         constexpr VectorData& begin_row() noexcept
         {
             return this->data_.front();
@@ -659,6 +680,7 @@ namespace Linalg {
             }
             return column_vector;
         }
+
         static constexpr MatrixData make_column(const std::initializer_list<Value> data)
         {
             MatrixData column_vector{};
@@ -1022,7 +1044,7 @@ namespace Linalg {
             return scale;
         }
 
-        MatrixData data_{}; // VectorData of vectors
+        MatrixData data_{};
     };
 
 }; // namespace Linalg
