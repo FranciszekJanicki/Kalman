@@ -54,11 +54,15 @@ namespace Linalg {
             WRONG_DIMS,
             SINGULARITY,
             BAD_ALLOC,
+            BAD_ACCESS,
         };
 
+        using Size = std::size_t;
         using VectorData = std::vector<Value>;
         using MatrixData = std::vector<std::vector<Value>>;
-        using ExpectedMatrixData = std::expected<MatrixData, MatrixError>;
+        using ExpectedMatrix = std::expected<MatrixData, MatrixError>;
+        using ExpectedVector = std::expected<VectorData, MatrixError>;
+        using ExpectedDet = std::expected<Value, MatrixError>;
         using Unexpected = std::unexpected<MatrixError>;
 
         [[nodiscard]] static constexpr Matrix row(const std::initializer_list<Value> row)
@@ -66,7 +70,7 @@ namespace Linalg {
             return Matrix{make_row(row)};
         }
 
-        [[nodiscard]] static constexpr Matrix row(const std::size_t rows)
+        [[nodiscard]] static constexpr Matrix row(const Size rows)
         {
             return Matrix{make_row(rows)};
         }
@@ -76,7 +80,7 @@ namespace Linalg {
             return Matrix{make_column(column)};
         }
 
-        [[nodiscard]] static constexpr Matrix column(const std::size_t columns)
+        [[nodiscard]] static constexpr Matrix column(const Size columns)
         {
             return Matrix{make_column(columns)};
         }
@@ -86,17 +90,17 @@ namespace Linalg {
             return Matrix{make_diagonal(diagonal)};
         }
 
-        [[nodiscard]] static constexpr Matrix eye(const std::size_t dimensions)
+        [[nodiscard]] static constexpr Matrix eye(const Size dimensions)
         {
             return Matrix{make_eye(dimensions)};
         }
 
-        [[nodiscard]] static constexpr Matrix ones(const std::size_t rows, const std::size_t columns)
+        [[nodiscard]] static constexpr Matrix ones(const Size rows, const Size columns)
         {
             return Matrix{make_ones(rows, columns)};
         }
 
-        [[nodiscard]] static constexpr Matrix zeros(const std::size_t rows, const std::size_t columns)
+        [[nodiscard]] static constexpr Matrix zeros(const Size rows, const Size columns)
         {
             return Matrix{make_zeros(rows, columns)};
         }
@@ -107,7 +111,7 @@ namespace Linalg {
         {
         }
 
-        constexpr Matrix(const std::size_t rows, const std::size_t columns) : data_{make_zeros(rows, columns)}
+        constexpr Matrix(const Size rows, const Size columns) : data_{make_zeros(rows, columns)}
         {
         }
 
@@ -145,8 +149,8 @@ namespace Linalg {
             assert(other.rows() == this->rows());
             assert(other.columns() == this->rows());
 
-            for (std::size_t row{0}; row < this->rows(); ++row) {
-                for (std::size_t column{0}; column < this->columns(); ++column) {
+            for (Size row{0}; row < this->rows(); ++row) {
+                for (Size column{0}; column < this->columns(); ++column) {
                     this->data_[row][column] += other.data_[row][column];
                 }
             }
@@ -159,8 +163,8 @@ namespace Linalg {
             assert(other.rows() == this->rows());
             assert(other.columns() == this->rows());
 
-            for (std::size_t row{0}; row < this->rows(); ++row) {
-                for (std::size_t column{0}; column < this->columns(); ++column) {
+            for (Size row{0}; row < this->rows(); ++row) {
+                for (Size column{0}; column < this->columns(); ++column) {
                     this->data_[row][column] -= other.data_[row][column];
                 }
             }
@@ -226,6 +230,15 @@ namespace Linalg {
                 print_error(expected_inverse.error());
                 std::unreachable();
             }
+        }
+
+        constexpr Matrix& operator^=(const Value& factor)
+        {
+            assert(this->is_square());
+            for (Value i{}; i < factor - 1; ++i) {
+                this->data_ *= this->data_;
+            }
+            return *this;
         }
 
         friend constexpr Matrix operator+(const Matrix& left, const Matrix& right)
@@ -312,6 +325,16 @@ namespace Linalg {
             }
         }
 
+        friend constexpr Matrix operator^(const Matrix& matrix, const Value& factor)
+        {
+            assert(matrix.is_square());
+            auto result{matrix.data_};
+            for (Value i{}; i < factor - 1; ++i) {
+                result *= matrix.data_;
+            }
+            return result;
+        }
+
         explicit constexpr operator MatrixData() && noexcept
         {
             return std::forward<Matrix>(*this).data_;
@@ -322,26 +345,26 @@ namespace Linalg {
             return this->data_;
         }
 
-        [[nodiscard]] constexpr const VectorData& operator[](const std::size_t row) const noexcept
+        [[nodiscard]] constexpr const VectorData& operator[](const Size row) const noexcept
         {
             assert(row <= this->rows());
             return this->data_[row];
         }
 
-        [[nodiscard]] constexpr VectorData& operator[](const std::size_t row) noexcept
+        [[nodiscard]] constexpr VectorData& operator[](const Size row) noexcept
         {
             assert(row <= this->rows());
             return this->data_[row];
         }
 
-        [[nodiscard]] constexpr Value& operator[](const std::size_t row, const std::size_t column) noexcept
+        [[nodiscard]] constexpr Value& operator[](const Size row, const Size column) noexcept
         {
             assert(row <= this->rows());
             assert(column <= this->columns());
             return this->data_[row][column];
         }
 
-        [[nodiscard]] constexpr const Value& operator[](const std::size_t row, const std::size_t column) const noexcept
+        [[nodiscard]] constexpr const Value& operator[](const Size row, const Size column) const noexcept
         {
             assert(row <= this->rows());
             assert(column <= this->columns());
@@ -380,13 +403,13 @@ namespace Linalg {
             std::swap(this->data_, other.data_);
         }
 
-        constexpr void insert_row(const std::size_t row, const VectorData& new_row)
+        constexpr void insert_row(const Size row, const VectorData& new_row)
         {
             assert(new_row.size() == this->columns());
             this->data_.insert(std::next(this->data_.begin(), row), new_row);
         }
 
-        constexpr void insert_column(const std::size_t column, const VectorData& new_column)
+        constexpr void insert_column(const Size column, const VectorData& new_column)
         {
             assert(new_column.size() == this->rows());
             for (const auto& row : this->data_) {
@@ -394,16 +417,16 @@ namespace Linalg {
             }
         }
 
-        constexpr void delete_row(const std::size_t row)
+        constexpr void delete_row(const Size row)
         {
             assert(row <= this->rows());
             this->data_.erase(std::next(this->data_.begin(), row));
         }
 
-        constexpr void delete_column(const std::size_t column)
+        constexpr void delete_column(const Size column)
         {
             assert(column <= this->columns());
-            for (std::size_t row{0}; row < this->rows(); ++row) {
+            for (Size row{0}; row < this->rows(); ++row) {
                 this->data_[row].erase(std::next(this->data_[row].begin(), column));
             }
         }
@@ -448,7 +471,7 @@ namespace Linalg {
             return begin_column;
         }
 
-        constexpr void reserve(const std::size_t rows, const std::size_t columns)
+        constexpr void reserve(const Size rows, const Size columns)
         {
             this->data_.reserve(rows);
             for (auto& row : this->data_) {
@@ -456,7 +479,7 @@ namespace Linalg {
             }
         }
 
-        constexpr void resize(const std::size_t rows, const std::size_t columns)
+        constexpr void resize(const Size rows, const Size columns)
         {
             this->data_.resize(rows);
             for (auto& row : this->data_) {
@@ -474,22 +497,22 @@ namespace Linalg {
             this->data_.clear();
         }
 
-        [[nodiscard]] constexpr bool empty() const noexcept
+        [[nodiscard]] constexpr bool is_empty() const noexcept
         {
             return this->rows() == this->columns() == 0;
         }
 
-        [[nodiscard]] constexpr bool square() const noexcept
+        [[nodiscard]] constexpr bool is_square() const noexcept
         {
             return this->rows() == this->columns();
         }
 
-        [[nodiscard]] constexpr std::size_t rows() const noexcept
+        [[nodiscard]] constexpr Size rows() const noexcept
         {
             return this->data_.size();
         }
 
-        [[nodiscard]] constexpr std::size_t columns() const noexcept
+        [[nodiscard]] constexpr Size columns() const noexcept
         {
             return this->data_[0].size();
         }
@@ -501,7 +524,7 @@ namespace Linalg {
             VectorData diagonale{};
             diagonale.reserve(this->rows());
 
-            for (std::size_t diag{0}; diag < this->rows(); ++diag) {
+            for (Size diag{0}; diag < this->rows(); ++diag) {
                 diagonale.push_back(this->data_[diag][diag]);
             }
             return diagonale;
@@ -585,28 +608,28 @@ namespace Linalg {
             return matrix;
         }
 
-        static constexpr MatrixData make_zeros(const std::size_t rows, const std::size_t columns)
+        static constexpr MatrixData make_zeros(const Size rows, const Size columns)
         {
             MatrixData matrix{};
             matrix.reserve(rows);
-            for (std::size_t row{0}; row < rows; ++row) {
+            for (Size row{0}; row < rows; ++row) {
                 auto& column{matrix.emplace_back()};
                 column.reserve(columns);
-                for (std::size_t col{0}; col < columns; ++col) {
+                for (Size col{0}; col < columns; ++col) {
                     column.emplace_back();
                 }
             }
             return matrix;
         }
 
-        static constexpr MatrixData make_ones(const std::size_t rows, const std::size_t columns)
+        static constexpr MatrixData make_ones(const Size rows, const Size columns)
         {
             MatrixData matrix{};
             matrix.reserve(rows);
-            for (std::size_t row{0}; row < rows; ++row) {
+            for (Size row{0}; row < rows; ++row) {
                 auto& column{matrix.emplace_back()};
                 column.reserve(columns);
-                for (std::size_t col{0}; col < columns; ++col) {
+                for (Size col{0}; col < columns; ++col) {
                     column.push_back(Value{1});
                 }
             }
@@ -617,10 +640,10 @@ namespace Linalg {
         {
             MatrixData matrix{};
             matrix.reserve(diagonal.size());
-            for (std::size_t row{0}; row < diagonal.size(); ++row) {
+            for (Size row{0}; row < diagonal.size(); ++row) {
                 auto& column{matrix.emplace_back()};
                 column.reserve(diagonal.size());
-                for (std::size_t col{0}; col < diagonal.size(); ++col) {
+                for (Size col{0}; col < diagonal.size(); ++col) {
                     if (col == row) {
                         column.push_back(*std::next(diagonal.begin(), col));
                     } else {
@@ -631,14 +654,14 @@ namespace Linalg {
             return matrix;
         }
 
-        static constexpr MatrixData make_eye(const std::size_t dimensions)
+        static constexpr MatrixData make_eye(const Size dimensions)
         {
             MatrixData matrix{};
             matrix.reserve(dimensions);
-            for (std::size_t row{0}; row < dimensions; ++row) {
+            for (Size row{0}; row < dimensions; ++row) {
                 auto& column{matrix.emplace_back()};
                 column.reserve(dimensions);
-                for (std::size_t col{0}; col < dimensions; ++col) {
+                for (Size col{0}; col < dimensions; ++col) {
                     if (col == row) {
                         column.push_back(Value{1});
                     } else {
@@ -649,11 +672,11 @@ namespace Linalg {
             return matrix;
         }
 
-        static constexpr MatrixData make_row(const std::size_t rows)
+        static constexpr MatrixData make_row(const Size rows)
         {
             VectorData row_vector{};
             row_vector.reserve(rows);
-            for (std::size_t row{}; row < rows; ++row) {
+            for (Size row{}; row < rows; ++row) {
                 row_vector.emplace_back();
             }
             return row_vector;
@@ -664,18 +687,18 @@ namespace Linalg {
             const auto columns{data.size()};
             row_vector.reserve(columns);
             auto make_column{[column{data.begin()}]() -> decltype(auto) { return *(column)++; }};
-            for (std::size_t row{}; row < data.size(); ++row) {
+            for (Size row{}; row < data.size(); ++row) {
                 row_vector.push_back(make_column());
             }
             return row_vector;
         }
 
-        static constexpr MatrixData make_column(const std::size_t columns)
+        static constexpr MatrixData make_column(const Size columns)
         {
             MatrixData column_vector{};
             auto& column{column_vector.emplace_back()};
             column.reserve(columns);
-            for (std::size_t col{}; col < columns; ++col) {
+            for (Size col{}; col < columns; ++col) {
                 column.emplace_back();
             }
             return column_vector;
@@ -687,17 +710,17 @@ namespace Linalg {
             auto& column{column_vector.emplace_back()};
             column.reserve(data.size());
             auto make_row{[row{data.begin()}]() -> decltype(auto) { return *(row)++; }};
-            for (std::size_t row{}; row < data.size(); ++row) {
+            for (Size row{}; row < data.size(); ++row) {
                 column_vector.push_back(make_row());
             }
             return column_vector;
         }
 
-        static constexpr ExpectedMatrixData
-        minor(const MatrixData& data, const std::size_t row, const std::size_t column, const std::size_t dimensions)
+        static constexpr ExpectedMatrix
+        minor(const MatrixData& data, const Size row, const Size column, const Size dimensions)
         {
-            const std::size_t rows{data.size()};
-            const std::size_t columns{data[0].size()};
+            const Size rows{data.size()};
+            const Size columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -710,14 +733,14 @@ namespace Linalg {
             }
             // minor is scalar, can omit later code
             if (dimensions == 0) {
-                return ExpectedMatrixData{data};
+                return ExpectedMatrix{data};
             }
 
             auto minor{make_zeros(dimensions, dimensions)};
-            std::size_t cof_row{0};
-            std::size_t cof_column{0};
-            for (std::size_t row_{0}; row_ < dimensions; ++row_) {
-                for (std::size_t column_{0}; column_ < dimensions; ++column_) {
+            Size cof_row{0};
+            Size cof_column{0};
+            for (Size row_{0}; row_ < dimensions; ++row_) {
+                for (Size column_{0}; column_ < dimensions; ++column_) {
                     // copying into cofactor matrixonly those element which are not in given row and column
                     if (row_ != row && column_ != column) {
                         minor[cof_row][cof_column++] = data[row_][column_];
@@ -730,13 +753,13 @@ namespace Linalg {
                     }
                 }
             }
-            return ExpectedMatrixData{std::move(minor)};
+            return ExpectedMatrix{std::move(minor)};
         }
 
-        static constexpr std::expected<Value, MatrixError> determinant(const MatrixData& data, std::size_t dimensions)
+        static constexpr ExpectedDet determinant(const MatrixData& data, Size dimensions)
         {
-            const std::size_t rows{data.size()};
-            const std::size_t columns{data[0].size()};
+            const Size rows{data.size()};
+            const Size columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -751,12 +774,11 @@ namespace Linalg {
 
             // data is scalar, can omit later code
             if (dimensions == 1) {
-                return std::expected<Value, MatrixError>{data[0][0]};
+                return ExpectedDet{data[0][0]};
             }
             // data is 2x2 matrix, can omit later code
             if (dimensions == 2) {
-                return std::expected<Value, MatrixError>{std::in_place,
-                                                         (data[0][0] * data[1][1]) - (data[1][0] * data[0][1])};
+                return ExpectedDet{std::in_place, (data[0][0] * data[1][1]) - (data[1][0] * data[0][1])};
             }
 
             auto det{static_cast<Value>(0)};
@@ -764,7 +786,7 @@ namespace Linalg {
             // sign multiplier
             auto sign{static_cast<Value>(1)};
             auto minor{make_zeros(dimensions, dimensions)};
-            for (std::size_t column{0}; column < dimensions; ++column) {
+            for (Size column{0}; column < dimensions; ++column) {
                 // cofactor of data[0][column]
 
                 if (auto expected_minor{Matrix::minor(data, 0, column, dimensions)}; expected_minor.has_value()) {
@@ -785,31 +807,31 @@ namespace Linalg {
                 sign *= static_cast<Value>(-1);
             }
 
-            return std::expected<Value, MatrixError>{det};
+            return ExpectedDet{det};
         }
 
         static constexpr MatrixData transposition(const MatrixData& data)
         {
-            const std::size_t new_rows{data.size()};
-            const std::size_t new_columns{data[0].size()};
+            const Size new_rows{data.size()};
+            const Size new_columns{data[0].size()};
 
             // data is scalar, can omit later code
             if ((new_rows == new_columns) == 1)
                 return data;
 
             auto transposition{make_zeros(new_rows, new_columns)};
-            for (std::size_t row{0}; row < new_rows; ++row) {
-                for (std::size_t column{0}; column < new_columns; ++column) {
+            for (Size row{0}; row < new_rows; ++row) {
+                for (Size column{0}; column < new_columns; ++column) {
                     transposition[row][column] = data[column][row];
                 }
             }
             return transposition;
         }
 
-        static constexpr ExpectedMatrixData adjoint(const MatrixData& data)
+        static constexpr ExpectedMatrix adjoint(const MatrixData& data)
         {
-            const std::size_t rows{data.size()};
-            const std::size_t columns{data[0].size()};
+            const Size rows{data.size()};
+            const Size columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -817,10 +839,10 @@ namespace Linalg {
             }
 
             // matrixsquare
-            const std::size_t dimensions{rows};
+            const Size dimensions{rows};
             // data is scalar, can omit later code
             if (dimensions == 1) {
-                return ExpectedMatrixData{data};
+                return ExpectedMatrix{data};
             }
 
             auto complement{make_zeros(dimensions, dimensions)};
@@ -828,8 +850,8 @@ namespace Linalg {
             // sign multiplier
             auto sign{static_cast<Value>(1)};
             auto minor{make_zeros(dimensions, dimensions)};
-            for (std::size_t row{0}; row < dimensions; ++row) {
-                for (std::size_t column{0}; column < dimensions; column++) {
+            for (Size row{0}; row < dimensions; ++row) {
+                for (Size column{0}; column < dimensions; column++) {
                     // get cofactor of data[row][column]
 
                     if (auto expected_minor{Matrix::minor(data, row, column, dimensions)}; expected_minor.has_value()) {
@@ -856,14 +878,14 @@ namespace Linalg {
                 }
             }
 
-            // adjostd::size_t is transposed of complement matrix
-            return ExpectedMatrixData{transposition(complement)};
+            // adjoSize is transposed of complement matrix
+            return ExpectedMatrix{transposition(complement)};
         }
 
-        static constexpr ExpectedMatrixData inverse(const MatrixData& data)
+        static constexpr ExpectedMatrix inverse(const MatrixData& data)
         {
-            const std::size_t rows{data.size()};
-            const std::size_t columns{data[0].size()};
+            const Size rows{data.size()};
+            const Size columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -871,10 +893,10 @@ namespace Linalg {
             }
 
             // matrixsquare
-            const std::size_t dimensions{rows};
+            const Size dimensions{rows};
             // data is scalar, can omit later code
             if (dimensions == 1) {
-                return ExpectedMatrixData{data};
+                return ExpectedMatrix{data};
             }
 
             if (auto expected_det{determinant(data, dimensions)}; expected_det.has_value()) {
@@ -891,7 +913,7 @@ namespace Linalg {
 
                     // inverse is adjoint matrixdivided by det factor
                     // division is multiplication by inverse
-                    return ExpectedMatrixData{scale(adjoint, 1 / det)};
+                    return ExpectedMatrix{scale(adjoint, 1 / det)};
                 } else {
                     print_error(expected_adjoint.error());
                     std::unreachable();
@@ -902,10 +924,10 @@ namespace Linalg {
             }
         }
 
-        static constexpr ExpectedMatrixData upper_triangular(const MatrixData& data)
+        static constexpr ExpectedMatrix upper_triangular(const MatrixData& data)
         {
-            const std::size_t rows{data.size()};
-            const std::size_t columns{data[0].size()};
+            const Size rows{data.size()};
+            const Size columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -913,19 +935,19 @@ namespace Linalg {
             }
 
             // matrixsquare
-            const std::size_t dimensions{rows};
+            const Size dimensions{rows};
             // data is scalar
             if (dimensions == 1)
-                return ExpectedMatrixData{data};
+                return ExpectedMatrix{data};
 
             // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
-            return ExpectedMatrixData{transposition(lower_triangular(data))};
+            return ExpectedMatrix{transposition(lower_triangular(data))};
         }
 
-        static constexpr ExpectedMatrixData lower_triangular(const MatrixData& data)
+        static constexpr ExpectedMatrix lower_triangular(const MatrixData& data)
         {
-            const std::size_t rows{data.size()};
-            const std::size_t columns{data[0].size()};
+            const Size rows{data.size()};
+            const Size columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -933,43 +955,43 @@ namespace Linalg {
             }
 
             // matrixsquare
-            const std::size_t dimensions = rows; // = columns;
+            const Size dimensions = rows; // = columns;
             // data is scalar
             if (dimensions == 1) {
-                return ExpectedMatrixData{data};
+                return ExpectedMatrix{data};
             }
 
             auto lower_triangular{make_zeros(dimensions, dimensions)};
 
             // decomposing data matrixinto lower triangular
-            for (std::size_t row{0}; row < dimensions; ++row) {
-                for (std::size_t column{0}; column <= row; ++column) {
+            for (Size row{0}; row < dimensions; ++row) {
+                for (Size column{0}; column <= row; ++column) {
                     Value sum{};
 
                     // summation for diagonals
                     if (column == row) {
-                        for (std::size_t sum_col{0}; sum_col < column; ++sum_col) {
+                        for (Size sum_col{0}; sum_col < column; ++sum_col) {
                             sum += std::pow(lower_triangular[column][sum_col], 2);
                         }
                         lower_triangular[column][column] = std::sqrt(data[column][column] - sum);
                     } else {
                         // evaluating L(row, column) using L(column, column)
-                        for (std::size_t sum_col{0}; sum_col < column; ++sum_col) {
+                        for (Size sum_col{0}; sum_col < column; ++sum_col) {
                             sum += (lower_triangular[row][sum_col] * lower_triangular[column][sum_col]);
                         }
                         lower_triangular[row][column] = (data[row][column] - sum) / lower_triangular[column][column];
                     }
                 }
             }
-            return ExpectedMatrixData{std::move(lower_triangular)};
+            return ExpectedMatrix{std::move(lower_triangular)};
         }
 
-        static constexpr ExpectedMatrixData product(const MatrixData& left, const MatrixData& right)
+        static constexpr ExpectedMatrix product(const MatrixData& left, const MatrixData& right)
         {
-            const std::size_t left_rows{left.size()};
-            const std::size_t right_rows{right.size()};
-            const std::size_t left_columns = {left[0].size()};
-            const std::size_t right_columns{right[0].size()};
+            const Size left_rows{left.size()};
+            const Size right_rows{right.size()};
+            const Size left_columns = {left[0].size()};
+            const Size right_columns{right[0].size()};
 
             // assert correct dimensions
             assert(left_columns == right_rows);
@@ -977,20 +999,20 @@ namespace Linalg {
                 return Unexpected{MatrixError::WRONG_DIMS};
             }
 
-            const std::size_t product_rows{left_rows};
-            const std::size_t product_columns{right_columns};
+            const Size product_rows{left_rows};
+            const Size product_columns{right_columns};
             auto product{make_zeros(product_rows, product_columns)};
 
-            for (std::size_t left_row{0}; left_row < left_rows; ++left_row) {
-                for (std::size_t right_column{0}; right_column < right_columns; ++right_column) {
+            for (Size left_row{0}; left_row < left_rows; ++left_row) {
+                for (Size right_column{0}; right_column < right_columns; ++right_column) {
                     Value sum{0};
-                    for (std::size_t left_column{0}; left_column < left_columns; ++left_column) {
+                    for (Size left_column{0}; left_column < left_columns; ++left_column) {
                         sum += left[left_row][left_column] * right[left_column][right_column];
                     }
                     product[left_row][right_column] = sum;
                 }
             }
-            return ExpectedMatrixData{std::move(product)};
+            return ExpectedMatrix{std::move(product)};
         }
 
         static constexpr MatrixData sum(const MatrixData& left, const MatrixData& right) noexcept
@@ -999,8 +1021,8 @@ namespace Linalg {
             assert(left[0].size() == right[0].size());
 
             auto sum{make_zeros(left.size(), right.size())};
-            for (std::size_t row{0}; row < left.size(); ++row) {
-                for (std::size_t column{0}; column < left[0].size(); ++column) {
+            for (Size row{0}; row < left.size(); ++row) {
+                for (Size column{0}; column < left[0].size(); ++column) {
                     sum[row][column] = left[row][column] + right[row][column];
                 }
             }
@@ -1013,8 +1035,8 @@ namespace Linalg {
             assert(left[0].size() == right[0].size());
 
             auto difference{make_zeros(left.size(), right.size())};
-            for (std::size_t row{0}; row < left.size(); ++row) {
-                for (std::size_t column{0}; column < left[0].size(); ++column) {
+            for (Size row{0}; row < left.size(); ++row) {
+                for (Size column{0}; column < left[0].size(); ++column) {
                     difference[row][column] = left[row][column] - right[row][column];
                 }
             }
@@ -1023,8 +1045,8 @@ namespace Linalg {
 
         static constexpr MatrixData scale(const MatrixData& data, const Value factor)
         {
-            const std::size_t rows{data.size()};
-            const std::size_t columns{data[0].size()};
+            const Size rows{data.size()};
+            const Size columns{data[0].size()};
 
             // factor is 1 then dont need to do anything
             if (factor == 1) {
@@ -1036,8 +1058,8 @@ namespace Linalg {
             }
 
             auto scale{make_zeros(rows, columns)};
-            for (std::size_t row{0}; row < rows; ++row) {
-                for (std::size_t column{0}; column < columns; ++column) {
+            for (Size row{0}; row < rows; ++row) {
+                for (Size column{0}; column < columns; ++column) {
                     scale[row][column] = data[row][column] * factor;
                 }
             }
