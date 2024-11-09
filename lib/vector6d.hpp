@@ -2,11 +2,10 @@
 #define VECTOR6D_HPP
 
 #include "arithmetic.hpp"
+#include "quaternion3d.hpp"
 #include "vector3d.hpp"
 #include <cmath>
 #include <compare>
-#include <fmt/core.h>
-#include <functional>
 #include <utility>
 
 namespace Linalg {

@@ -1,31 +1,33 @@
 #ifndef DIJKSTRA_HPP
 #define DIJKSTRA_HPP
 
+#include "quaternion3d.hpp"
 #include "vector3d.hpp"
 #include "vector6d.hpp"
 #include <algorithm>
 #include <queue>
+#include <ranges>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
 
-namespace {
-    using Value = float;
-    using Location = Linalg::Vector6D<Value>;
-    using Distance = Linalg::Vector3D<Value>;
-    using Neighbor = std::pair<Location, Distance>;
-    using NeighborToDistance = std::unordered_map<Location, Distance>;
-    using Graph = std::unordered_map<Location, NeighborToDistance>;
-    using Cost = Distance;
-    using LocationToCost = std::unordered_map<Location, Cost>;
-    using LocationToParent = std::unordered_map<Location, Location>;
-    using LocationsToVisit = std::priority_queue<Location>;
-    using LocationsVisited = std::unordered_set<Location>;
-    using Path = std::vector<Location>;
-}; // namespace
-
 namespace Algorithm {
+
+    namespace {
+        using Value = float;
+        using Location = Linalg::Vector6D<Value>;
+        using Distance = Linalg::Vector3D<Value>;
+        using Neighbor = std::pair<Location, Distance>;
+        using NeighborToDistance = std::unordered_map<Location, Distance>;
+        using Graph = std::unordered_map<Location, NeighborToDistance>;
+        using Cost = Distance;
+        using LocationToCost = std::unordered_map<Location, Cost>;
+        using LocationToParent = std::unordered_map<Location, Location>;
+        using LocationsToVisit = std::priority_queue<Location>;
+        using LocationsVisited = std::unordered_set<Location>;
+        using Path = std::vector<Location>;
+    }; // namespace
 
     static auto make_path(const LocationToParent& location_to_parent, const Location& start, const Location& goal)
     {
@@ -36,7 +38,7 @@ namespace Algorithm {
             path.push_back(current_location);
             current_location = location_to_parent.at(current_location);
         }
-        std::reverse(path.cbegin(), path.cend());
+        std::ranges::reverse(path);
         return path;
     }
 
