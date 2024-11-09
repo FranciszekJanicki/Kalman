@@ -2,9 +2,9 @@
 #define VECTOR3D_HPP
 
 #include "arithmetic.hpp"
+#include "quaternion3d.hpp"
 #include <cmath>
 #include <compare>
-#include <quaternion3d.hpp>
 #include <utility>
 
 namespace Linalg {

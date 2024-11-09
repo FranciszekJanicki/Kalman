@@ -2,12 +2,12 @@
 #define ROTATION3D_HPP
 
 #include "arithmetic.hpp"
+#include "vector3d.hpp"
 #include <array>
 #include <cmath>
 #include <compare>
 #include <cstdlib>
 #include <utility>
-#include <vector3d.hpp>
 
 namespace Linalg {
 

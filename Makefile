@@ -12,7 +12,16 @@ build:
 run:
 	cd ${BUILD_DIR} && ./App
 
-	.PHONY: setup-eigen
+.PHONY: clean
+clean:
+	cd ${PROJECT_DIR} && rm -rf ${BUILD_DIR}
+
+.PHONY: cmake
+cmake:
+	cd ${PROJECT_DIR} && make clean && mkdir ${BUILD_DIR} && cmake -S . -B ${BUILD_DIR}
+
+
+.PHONY: setup-eigen
 setup-eigen:
 	@if [ ! -d "${THIRD_PARTY_DIR}" ]; then \
 	mkdir ${THIRD_PARTY_DIR}; \
