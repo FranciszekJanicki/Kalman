@@ -13,77 +13,78 @@ namespace Linalg {
 
     template <Arithmetic Value>
     struct Rotation3D {
-        constexpr Rotation3D& operator+=(const Rotation3D& other) noexcept
+        constexpr Rotation3D& operator+=(this Rotation3D& self, Rotation3D const& other) noexcept
         {
-            this->x += other.x;
-            this->y += other.y;
-            this->z += other.z;
-            return *this;
+            self.x += other.x;
+            self.y += other.y;
+            self.z += other.z;
+            return self;
         }
 
-        constexpr Rotation3D& operator-=(const Rotation3D& other) noexcept
+        constexpr Rotation3D& operator-=(this Rotation3D& self, Rotation3D const& other) noexcept
         {
-            this->x -= other.x;
-            this->y -= other.y;
-            this->z -= other.z;
-            return *this;
+            self.x -= other.x;
+            self.y -= other.y;
+            self.z -= other.z;
+            return self;
         }
 
-        constexpr Rotation3D& operator*=(const Rotation3D& other) noexcept
+        constexpr Rotation3D& operator*=(this Rotation3D& self, Rotation3D const& other) noexcept
         {
-            const auto& [left_x, left_y, left_z] = std::forward_as_tuple(this->x, this->y, this->z);
-            const auto& [right_x, right_y, right_z] = std::forward_as_tuple(other.x, other.y, other.z);
-            this->x = Vector3D<Value>{left_x.x * right_x.x + left_x.y * right_y.x + left_x.z * right_z.x,
-                                      left_x.x * right_x.y + left_x.y * right_y.y + left_x.z * right_z.y,
-                                      left_x.x * right_x.z + left_x.y * right_y.z + left_x.z * right_z.z};
-            this->y = Vector3D<Value>{left_y.x * right_x.x + left_y.y * right_y.x + left_y.z * right_z.x,
-                                      left_y.x * right_x.y + left_y.y * right_y.y + left_y.z * right_z.y,
-                                      left_y.x * right_x.z + left_y.y * right_y.z + left_y.z * right_z.z};
-            this->z = Vector3D<Value>{left_z.x * right_x.x + left_z.y * right_y.x + left_z.z * right_z.x,
-                                      left_z.x * right_x.y + left_z.y * right_y.y + left_z.z * right_z.y,
-                                      left_z.x * right_x.z + left_z.y * right_y.z + left_z.z * right_z.z};
-            return *this;
+            auto const& [left_x, left_y, left_z] = std::forward_as_tuple(self.x, self.y, self.z);
+            auto const& [right_x, right_y, right_z] = std::forward_as_tuple(other.x, other.y, other.z);
+            self.x = Vector3D<Value>{left_x.x * right_x.x + left_x.y * right_y.x + left_x.z * right_z.x,
+                                     left_x.x * right_x.y + left_x.y * right_y.y + left_x.z * right_z.y,
+                                     left_x.x * right_x.z + left_x.y * right_y.z + left_x.z * right_z.z};
+            self.y = Vector3D<Value>{left_y.x * right_x.x + left_y.y * right_y.x + left_y.z * right_z.x,
+                                     left_y.x * right_x.y + left_y.y * right_y.y + left_y.z * right_z.y,
+                                     left_y.x * right_x.z + left_y.y * right_y.z + left_y.z * right_z.z};
+            self.z = Vector3D<Value>{left_z.x * right_x.x + left_z.y * right_y.x + left_z.z * right_z.x,
+                                     left_z.x * right_x.y + left_z.y * right_y.y + left_z.z * right_z.y,
+                                     left_z.x * right_x.z + left_z.y * right_y.z + left_z.z * right_z.z};
+            return self;
         }
-        constexpr Rotation3D& operator*=(const Value factor) noexcept
+        constexpr Rotation3D& operator*=(this Rotation3D& self, Value const factor) noexcept
         {
-            this->x *= factor;
-            this->y *= factor;
-            this->z *= factor;
-            return *this;
-        }
-
-        constexpr Rotation3D& operator/=(const Value factor) noexcept
-        {
-            this->x /= factor;
-            this->y /= factor;
-            this->z /= factor;
-            return *this;
+            self.x *= factor;
+            self.y *= factor;
+            self.z *= factor;
+            return self;
         }
 
-        [[nodiscard]] constexpr bool operator<=>(const Rotation3D& other) const noexcept = default;
+        constexpr Rotation3D& operator/=(this Rotation3D& self, Value const factor) noexcept
+        {
+            self.x /= factor;
+            self.y /= factor;
+            self.z /= factor;
+            return self;
+        }
 
-        Rotation3D<Value> x{};
-        Rotation3D<Value> y{};
-        Rotation3D<Value> z{};
+        [[nodiscard]] constexpr bool operator<=>(this Rotation3D const& self,
+                                                 Rotation3D const& other) noexcept = default;
+
+        Vector3D<Value> x{};
+        Vector3D<Value> y{};
+        Vector3D<Value> z{};
     };
 
     template <Arithmetic Value>
-    constexpr auto operator+(const Rotation3D<Value>& left, const Rotation3D<Value>& right) noexcept
+    constexpr Rotation3D<Value> operator+(Rotation3D<Value> const& left, Rotation3D<Value> const& right) noexcept
     {
         return Rotation3D<Value>{left.x + right.x, left.y + right.y, left.z + right.z};
     }
 
     template <Arithmetic Value>
-    constexpr auto operator-(const Rotation3D<Value>& left, const Rotation3D<Value>& right) noexcept
+    constexpr Rotation3D<Value> operator-(Rotation3D<Value> const& left, Rotation3D<Value> const& right) noexcept
     {
         return Rotation3D<Value>{left.x - right.x, left.y - right.y, left.z - right.z};
     }
 
     template <Arithmetic Value>
-    constexpr auto operator*(const Rotation3D<Value>& left, const Rotation3D<Value>& right) noexcept
+    constexpr Rotation3D<Value> operator*(Rotation3D<Value> const& left, Rotation3D<Value> const& right) noexcept
     {
-        const auto& [left_x, left_y, left_z] = std::forward_as_tuple(left.x, left.y, left.z);
-        const auto& [right_x, right_y, right_z] = std::forward_as_tuple(right.x, right.y, right.z);
+        auto const& [left_x, left_y, left_z] = std::forward_as_tuple(left.x, left.y, left.z);
+        auto const& [right_x, right_y, right_z] = std::forward_as_tuple(right.x, right.y, right.z);
         return Rotation3D<Value>{Vector3D<Value>{left_x.x * right_x.x + left_x.y * right_y.x + left_x.z * right_z.x,
                                                  left_x.x * right_x.y + left_x.y * right_y.y + left_x.z * right_z.y,
                                                  left_x.x * right_x.z + left_x.y * right_y.z + left_x.z * right_z.z},
@@ -95,18 +96,18 @@ namespace Linalg {
                                                  left_z.x * right_x.z + left_z.y * right_y.z + left_z.z * right_z.z}};
     }
     template <Arithmetic Value>
-    constexpr auto operator*(const Value factor, const Rotation3D<Value>& matrix) noexcept
+    constexpr Rotation3D<Value> operator*(Value const factor, Rotation3D<Value> const& matrix) noexcept
     {
         return Rotation3D<Value>{matrix.x * factor, matrix.y * factor, matrix.z * factor};
     }
     template <Arithmetic Value>
-    constexpr auto operator*(const Rotation3D<Value>& matrix, const Value factor) noexcept
+    constexpr Rotation3D<Value> operator*(Rotation3D<Value> const& matrix, Value const factor) noexcept
     {
         return Rotation3D<Value>{matrix.x * factor, matrix.y * factor, matrix.z * factor};
     }
 
     template <Arithmetic Value>
-    constexpr auto operator/(const Rotation3D<Value>& matrix, const Value factor) noexcept
+    constexpr Rotation3D<Value> operator/(Rotation3D<Value> const& matrix, Value const factor) noexcept
     {
         return Rotation3D<Value>{matrix.x / factor, matrix.y / factor, matrix.z / factor};
     }

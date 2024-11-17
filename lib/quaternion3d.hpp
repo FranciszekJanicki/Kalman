@@ -12,69 +12,64 @@ namespace Linalg {
 
     template <Arithmetic Value>
     struct Quaternion3D {
-        [[nodiscard]] constexpr Quaternion3D conjugated() const noexcept
+        [[nodiscard]] constexpr Quaternion3D conjugated(this Quaternion3D const& self) noexcept
         {
-            return Quaternion3D{w, -x, -y, -z};
+            return Quaternion3D{self.w, -self.x, -self.y, -self.z};
         }
 
-        constexpr void conjugate() noexcept
+        constexpr void conjugate(this Quaternion3D& self) noexcept
         {
-            x = -x;
-            y = -y;
-            z = -z;
+            self = self.conjugated();
         }
 
-        [[nodiscard]] constexpr auto magnitude() const noexcept
+        [[nodiscard]] constexpr auto magnitude(this Quaternion3D const& self) noexcept
         {
-            return std::sqrt(std::pow(w, 2) + std::pow(x, 2) + std::pow(y, 2) + std::pow(z, 2));
+            return std::sqrt(std::pow(self.w, 2) + std::pow(self.x, 2) + std::pow(self.y, 2) + std::pow(self.z, 2));
         }
 
-        [[nodiscard]] constexpr Quaternion3D normalized() const noexcept
+        [[nodiscard]] constexpr Quaternion3D normalized(this Quaternion3D const& self) noexcept
         {
-            const auto im{static_cast<Value>(1) / magnitude()};
-            return Quaternion3D{w * im, x * im, y * im, z * im};
+            const auto im{static_cast<Value>(1) / self.magnitude()};
+            return Quaternion3D{self.w * im, self.x * im, self.y * im, self.z * im};
         }
 
-        constexpr void normalize() noexcept
+        constexpr void normalize(this Quaternion3D& self) noexcept
         {
-            const auto im{static_cast<Value>(1) / magnitude()};
-            w *= im;
-            x *= im;
-            y *= im;
-            z *= im;
+            self = self.normalized();
         }
 
-        constexpr Quaternion3D& operator+=(const Quaternion3D& other) noexcept
+        constexpr Quaternion3D& operator+=(this Quaternion3D& self, Quaternion3D const& other) noexcept
         {
-            this->w += other.w;
-            this->x += other.x;
-            this->y += other.y;
-            this->z += other.z;
-            return *this;
+            self.w += other.w;
+            self.x += other.x;
+            self.y += other.y;
+            self.z += other.z;
+            return self;
         }
 
-        constexpr Quaternion3D& operator-=(const Quaternion3D& other) noexcept
+        constexpr Quaternion3D& operator-=(this Quaternion3D& self, Quaternion3D const& other) noexcept
         {
-            this->w -= other.w;
-            this->x -= other.x;
-            this->y -= other.y;
-            this->z -= other.z;
-            return *this;
+            self.w -= other.w;
+            self.x -= other.x;
+            self.y -= other.y;
+            self.z -= other.z;
+            return self;
         }
 
-        constexpr Quaternion3D& operator*=(const Quaternion3D& other) noexcept
+        constexpr Quaternion3D& operator*=(this Quaternion3D& self, Quaternion3D const& other) noexcept
         {
-            const auto& [left_w, left_x, left_y, left_z] = std::forward_as_tuple(this->w, this->x, this->y, this->z);
-            const auto& [right_w, right_x, right_y, right_z] =
+            auto const& [left_w, left_x, left_y, left_z] = std::forward_as_tuple(self.w, self.x, self.y, self.z);
+            auto const& [right_w, right_x, right_y, right_z] =
                 std::forward_as_tuple(other.w, other.x, other.y, other.z);
-            this->w = left_w * right_w - left_x * right_x - left_y * right_y - left_z * right_z;
-            this->x = left_w * right_x + left_x * right_w + left_y * right_z - left_z * right_y;
-            this->y = left_w * right_y - left_x * right_z + left_y * right_w + left_z * right_x;
-            this->z = left_w * right_z + left_x * right_y - left_y * right_x + left_z * right_w;
-            return *this;
+            self.w = left_w * right_w - left_x * right_x - left_y * right_y - left_z * right_z;
+            self.x = left_w * right_x + left_x * right_w + left_y * right_z - left_z * right_y;
+            self.y = left_w * right_y - left_x * right_z + left_y * right_w + left_z * right_x;
+            self.z = left_w * right_z + left_x * right_y - left_y * right_x + left_z * right_w;
+            return self;
         }
 
-        [[nodiscard]] constexpr bool operator<=>(const Quaternion3D& other) const noexcept = default;
+        [[nodiscard]] constexpr bool operator<=>(this Quaternion3D const& self,
+                                                 Quaternion3D const& other) noexcept = default;
 
         Value w{};
         Value x{};
@@ -83,22 +78,22 @@ namespace Linalg {
     };
 
     template <Arithmetic Value>
-    constexpr auto operator+(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
+    constexpr Quaternion3D<Value> operator+(Quaternion3D<Value> const& left, Quaternion3D<Value> const& right) noexcept
     {
         return Quaternion3D<Value>{left.w + right.w, left.x + right.x, left.y + right.y, left.z + right.z};
     }
 
     template <Arithmetic Value>
-    constexpr auto operator-(const Quaternion3D<Value>& left, const Quaternion3D<Value>& right) noexcept
+    constexpr Quaternion3D<Value> operator-(Quaternion3D<Value> const& left, Quaternion3D<Value> const& right) noexcept
     {
         return Quaternion3D<Value>{left.w - right.w, left.x - right.x, left.y - right.y, left.z + right.z};
     }
 
     template <Arithmetic Value>
-    constexpr auto operator*(const Quaternion3D<Value>& left, const Quaternion3D<Value>& other) noexcept
+    constexpr Quaternion3D<Value> operator*(Quaternion3D<Value> const& left, Quaternion3D<Value> const& other) noexcept
     {
-        const auto& [left_w, left_x, left_y, left_z] = std::forward_as_tuple(left.w, left.x, left.y, left.z);
-        const auto& [right_w, right_x, right_y, right_z] = std::forward_as_tuple(other.w, other.x, other.y, other.z);
+        auto const& [left_w, left_x, left_y, left_z] = std::forward_as_tuple(left.w, left.x, left.y, left.z);
+        auto const& [right_w, right_x, right_y, right_z] = std::forward_as_tuple(other.w, other.x, other.y, other.z);
         return Quaternion3D<Value>{left_w * right_w - left_x * right_x - left_y * right_y - left_z * right_z,
                                    left_w * right_x + left_x * right_w + left_y * right_z - left_z * right_y,
                                    left_w * right_y - left_x * right_z + left_y * right_w + left_z * right_x,

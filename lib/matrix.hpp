@@ -412,7 +412,7 @@ namespace Linalg {
         constexpr void insert_column(const Size column, const VectorData& new_column)
         {
             assert(new_column.size() == this->rows());
-            for (const auto& row : this->data_) {
+            for (auto const& row : this->data_) {
                 row.insert(std::next(row.begin(), column), new_column[column]);
             }
         }
@@ -455,7 +455,7 @@ namespace Linalg {
         {
             VectorData end_column{};
             end_column.reserve(this->columns());
-            for (const auto& row : this->data_) {
+            for (auto const& row : this->data_) {
                 end_column.push_back(row.back());
             }
             return end_column;
@@ -465,7 +465,7 @@ namespace Linalg {
         {
             VectorData begin_column{};
             begin_column.reserve(this->columns());
-            for (const auto& row : this->data_) {
+            for (auto const& row : this->data_) {
                 begin_column.push_back(row.front());
             }
             return begin_column;
@@ -598,10 +598,10 @@ namespace Linalg {
         {
             MatrixData matrix{};
             matrix.reserve(data.size());
-            for (const auto& row : data) {
+            for (auto const& row : data) {
                 auto& column{matrix.emplace_back()};
                 column.reserve(row.size());
-                for (const auto& col : row) {
+                for (auto const& col : row) {
                     column.push_back(col);
                 }
             }

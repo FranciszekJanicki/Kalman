@@ -35,154 +35,153 @@ namespace Filter {
             Matrix kalman_gain{};            // states x measurements
         };
 
-        constexpr Kalman(const FilterModel& filter_model, const MeasureModel& measure_model) :
+        constexpr Kalman(FilterModel const& filter_model, MeasureModel const& measure_model) :
             filter_model_{filter_model}, measure_model_{measure_model}
         {
-            this->initialize();
+            initialize();
         }
 
         constexpr Kalman(FilterModel&& filter_model, MeasureModel&& measure_model) noexcept :
             filter_model_{std::forward<FilterModel>(filter_model)},
             measure_model_{std::forward<MeasureModel>(measure_model)}
         {
-            this->initialize();
+            initialize();
         }
 
-        constexpr void operator()(const Matrix& measurement)
+        constexpr void operator()(this Kalman& self, Matrix const& measurement)
         {
-            this->predict();
-            this->update(measurement);
+            self.predict();
+            self.update(measurement);
         }
 
-        [[nodiscard]] constexpr FilterModel&& filter_model() && noexcept
+        [[nodiscard]] constexpr FilterModel&& filter_model(this Kalman&& self) noexcept
         {
-            return std::forward<Kalman>(*this).filter_model_;
+            return std::forward<Kalman>(self).filter_model_;
         }
 
-        [[nodiscard]] constexpr const FilterModel& filter_model() const& noexcept
+        [[nodiscard]] constexpr FilterModel const& filter_model(this Kalman const& self) noexcept
         {
-            return this->filter_model_;
+            return self.filter_model_;
         }
 
-        constexpr void filter_model(const FilterModel& filter_model) noexcept
+        constexpr void filter_model(this Kalman& self, FilterModel const& filter_model) noexcept
         {
-            this->filter_model_ = filter_model;
+            self.filter_model_ = filter_model;
         }
 
-        constexpr void filter_model(FilterModel&& filter_model) noexcept
+        constexpr void filter_model(this Kalman& self, FilterModel&& filter_model) noexcept
         {
-            this->filter_model_ = std::forward<FilterModel>(filter_model);
+            self.filter_model_ = std::forward<FilterModel>(filter_model);
         }
 
-        [[nodiscard]] constexpr MeasureModel&& measure_model() && noexcept
+        [[nodiscard]] constexpr MeasureModel&& measure_model(this Kalman&& self) noexcept
         {
-            return std::forward<Kalman>(*this).measure_model_;
+            return std::forward<Kalman>(self).measure_model_;
         }
 
-        [[nodiscard]] constexpr const MeasureModel& measure_model() const& noexcept
+        [[nodiscard]] constexpr MeasureModel const& measure_model(this Kalman const& self) noexcept
         {
-            return this->measure_model_;
+            return self.measure_model_;
         }
 
-        constexpr void measure_model(const MeasureModel& measure_model) noexcept
+        constexpr void measure_model(this Kalman& self, MeasureModel const& measure_model) noexcept
         {
-            this->measure_model_ = measure_model;
+            self.measure_model_ = measure_model;
         }
 
-        constexpr void measure_model(MeasureModel&& measure_model) noexcept
+        constexpr void measure_model(this Kalman& self, MeasureModel&& measure_model) noexcept
         {
-            this->measure_model_ = std::forward<MeasureModel>(measure_model);
+            self.measure_model_ = std::forward<MeasureModel>(measure_model);
         }
 
-        constexpr void print_state() const noexcept
+        constexpr void print_state(this Kalman const& self) noexcept
         {
-            this->filter_model_.state_.print();
+            self.filter_model_.state_.print();
         }
 
-        constexpr void print_predicted() const noexcept
+        constexpr void print_predicted(this Kalman const& self) noexcept
         {
-            this->measure_model_.predicted_state_.print();
+            self.measure_model_.predicted_state_.print();
         }
 
     private:
-        constexpr void predict()
+        constexpr void predict(this Kalman& self)
         {
-            if (!this->is_initialized_) {
+            if (!self.is_initialized_) {
                 fmt::print("Filter uninitialized!");
                 return;
             }
 
             /* predict state */
-            this->predicted_state_ = this->filter_model_.state_transition * this->state_;
+            self.predicted_state_ = self.filter_model_.state_transition * self.state_;
 
             /* predict covariance */
-            this->filter_model_.state_covariance =
-                ((this->filter_model_.state_transition * this->filter_model_.state_covariance) *
-                 this->filter_model_.state_transition);
-            this->filter_model_.state_covariance +=
-                ((this->filter_model_.input_transition * this->filter_model_.input_covariance) *
-                 this->filter_model_.input_transition);
+            self.filter_model_.state_covariance =
+                ((self.filter_model_.state_transition * self.filter_model_.state_covariance) *
+                 self.filter_model_.state_transition);
+            self.filter_model_.state_covariance +=
+                ((self.filter_model_.input_transition * self.filter_model_.input_covariance) *
+                 self.filter_model_.input_transition);
         }
 
-        constexpr void update(const Matrix& measurement)
+        constexpr void update(this Kalman& self, const Matrix& measurement)
         {
-            if (!this->is_initialized_) {
+            if (!self.is_initialized_) {
                 fmt::print("Filter uninitialized!");
                 return;
             }
 
             /* calculate innovation */
-            this->measure_model_.innovation =
-                measurement - (this->measure_model_.measurement_transition * this->state_);
+            self.measure_model_.innovation = measurement - (self.measure_model_.measurement_transition * self.state_);
 
             /* calculate residual covariance */
-            auto temp_measurement_transition{this->measure_model_.measurement_transition};
+            auto temp_measurement_transition{self.measure_model_.measurement_transition};
             temp_measurement_transition.transpose();
-            this->measure_model_.residual_covariance =
-                (this->measure_model_.measurement_transition * this->filter_model_.state_covariance *
+            self.measure_model_.residual_covariance =
+                (self.measure_model_.measurement_transition * self.filter_model_.state_covariance *
                  temp_measurement_transition) +
-                this->measure_model_.process_noise;
+                self.measure_model_.process_noise;
 
             /* calculate kalman gain */
-            auto temp_residual_covariance{this->measure_model_.residual_covariance};
+            auto temp_residual_covariance{self.measure_model_.residual_covariance};
             temp_residual_covariance.invert();
-            this->measure_model_.kalman_gain =
-                ((this->filter_model_.state_covariance * temp_measurement_transition) * temp_residual_covariance);
+            self.measure_model_.kalman_gain =
+                ((self.filter_model_.state_covariance * temp_measurement_transition) * temp_residual_covariance);
 
             /* correct state prediction */
-            this->state_ *= (this->measure_model_.kalman_gain * this->measure_model_.innovation);
+            self.state_ *= (self.measure_model_.kalman_gain * self.measure_model_.innovation);
 
             /* correct state covariance */
-            this->filter_model_.state_covariance -=
-                this->measure_model_.kalman_gain *
-                (this->measure_model_.measurement_transition * this->filter_model_.state_covariance);
+            self.filter_model_.state_covariance -=
+                self.measure_model_.kalman_gain *
+                (self.measure_model_.measurement_transition * self.filter_model_.state_covariance);
         }
 
-        void initialize() noexcept
+        void initialize(this Kalman& self) noexcept
         {
-            if (!this->is_initialized_) {
+            if (!self.is_initialized_) {
                 fmt::print("Checking correct dimensions");
-                assert(this->filter_model_.states == this->measure_model_.states);
-                assert(this->filter_model_.state_transition.rows() == this->filter_model_.states);
-                assert(this->filter_model_.state_transition.columns() == this->filter_model_.inputs);
-                assert(this->filter_model_.input_transition.rows() == this->filter_model_.states);
-                assert(this->filter_model_.input_transition.columns() == this->filter_model_.inputs);
-                assert(this->filter_model_.state_covariance.rows() == this->filter_model_.states);
-                assert(this->filter_model_.state_covariance.columns() == this->filter_model_.states);
-                assert(this->filter_model_.input_covariance.rows() == this->filter_model_.inputs);
-                assert(this->filter_model_.input_covariance.columns() == this->filter_model_.inputs);
-                assert(this->measure_model_.measurement_transition.rows() == this->measure_model_.measurements);
-                assert(this->measure_model_.measurement_transition.columns() == this->measure_model_.states);
-                assert(this->measure_model_.process_noise.rows() == this->measure_model_.measurements);
-                assert(this->measure_model_.process_noise.columns() == this->measure_model_.measurements);
-                assert(this->measure_model_.innovation.rows() == this->measure_model_.measurements);
-                assert(this->measure_model_.innovation.columns() == 1);
-                assert(this->measure_model_.residual_covariance.rows() == this->measure_model_.measurements);
-                assert(this->measure_model_.residual_covariance.columns() == this->measure_model_.measurements);
-                assert(this->measure_model_.kalman_gain.rows() == this->measure_model_.states);
-                assert(this->measure_model_.kalman_gain.columns() == this->measure_model_.measurements);
+                assert(self.filter_model_.states == self.measure_model_.states);
+                assert(self.filter_model_.state_transition.rows() == self.filter_model_.states);
+                assert(self.filter_model_.state_transition.columns() == self.filter_model_.inputs);
+                assert(self.filter_model_.input_transition.rows() == self.filter_model_.states);
+                assert(self.filter_model_.input_transition.columns() == self.filter_model_.inputs);
+                assert(self.filter_model_.state_covariance.rows() == self.filter_model_.states);
+                assert(self.filter_model_.state_covariance.columns() == self.filter_model_.states);
+                assert(self.filter_model_.input_covariance.rows() == self.filter_model_.inputs);
+                assert(self.filter_model_.input_covariance.columns() == self.filter_model_.inputs);
+                assert(self.measure_model_.measurement_transition.rows() == self.measure_model_.measurements);
+                assert(self.measure_model_.measurement_transition.columns() == self.measure_model_.states);
+                assert(self.measure_model_.process_noise.rows() == self.measure_model_.measurements);
+                assert(self.measure_model_.process_noise.columns() == self.measure_model_.measurements);
+                assert(self.measure_model_.innovation.rows() == self.measure_model_.measurements);
+                assert(self.measure_model_.innovation.columns() == 1);
+                assert(self.measure_model_.residual_covariance.rows() == self.measure_model_.measurements);
+                assert(self.measure_model_.residual_covariance.columns() == self.measure_model_.measurements);
+                assert(self.measure_model_.kalman_gain.rows() == self.measure_model_.states);
+                assert(self.measure_model_.kalman_gain.columns() == self.measure_model_.measurements);
                 fmt::print("Filter has correct dimmensions");
-                this->is_initialized_ = true;
+                self.is_initialized_ = true;
             }
         }
 

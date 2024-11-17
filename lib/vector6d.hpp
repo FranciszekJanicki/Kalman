@@ -12,114 +12,117 @@ namespace Linalg {
 
     template <Arithmetic Value>
     struct Vector6D {
-        [[nodiscard]] constexpr auto distance(const Vector6D& other) const noexcept
+        [[nodiscard]] constexpr auto distance(this Vector6D const& self, Vector6D const& other) noexcept
         {
-            return this->orientation.distance(other.orientation);
+            return self.orientation.distance(other.orientation);
         }
 
-        [[nodiscard]] constexpr auto magnitude() const noexcept
+        [[nodiscard]] constexpr auto magnitude(this Vector6D const& self) noexcept
         {
-            return std::sqrt(std::pow(this->orientation.magnitude(), 2) + std::pow(this->position.magnitude(), 2));
+            return std::sqrt(std::pow(self.orientation.magnitude(), 2) + std::pow(self.position.magnitude(), 2));
         }
 
-        [[nodiscard]] constexpr Vector6D normalized() const noexcept
+        [[nodiscard]] constexpr Vector6D normalized(this Vector6D const& self) noexcept
         {
-            return Vector6D{position.normalized(), orientation.normalized()};
+            return Vector6D{self.position.normalized(), self.orientation.normalized()};
         }
 
-        constexpr void normalize() noexcept
+        constexpr void normalize(this Vector6D& self) noexcept
         {
-            position.normalize();
-            orientation.normalize();
+            self.position.normalize();
+            self.orientation.normalize();
         }
 
-        constexpr void print() const noexcept
+        constexpr void print(this Vector6D const& self) noexcept
         {
-            position.print();
-            orientation.print();
+            self.position.print();
+            self.orientation.print();
         }
 
-        constexpr Vector6D& operator+=(const Vector6D& other) noexcept
+        constexpr Vector6D& operator+=(this Vector6D& self, Vector6D const& other) noexcept
         {
-            this->position += other.position;
-            this->orientation += other.orientation;
-            return *this;
+            self.position += other.position;
+            self.orientation += other.orientation;
+            return self;
         }
 
-        constexpr Vector6D& operator-=(const Vector6D& other) noexcept
+        constexpr Vector6D& operator-=(this Vector6D& self, Vector6D const& other) noexcept
         {
-            this->position -= other.position;
-            this->orientation -= other.orientation;
-            return *this;
+            self.position -= other.position;
+            self.orientation -= other.orientation;
+            return self;
         }
 
-        constexpr Vector6D& operator*=(const Vector6D& other) noexcept
+        constexpr Vector6D& operator*=(this Vector6D& self, Vector6D const& other) noexcept
         {
-            this->position *= other.position;
-            this->orientation *= other.orientation;
-            return *this;
+            self.position *= other.position;
+            self.orientation *= other.orientation;
+            return self;
         }
-        constexpr Vector6D& operator*=(const Value factor) noexcept
+        constexpr Vector6D& operator*=(this Vector6D& self, Value const factor) noexcept
         {
-            this->position *= factor;
-            this->operation *= factor;
-            return *this;
-        }
-
-        constexpr Vector6D& operator/=(const Vector6D& other) noexcept
-        {
-            this->position /= other.position;
-            this->orientation /= other.orientation;
-            return *this;
-        }
-        constexpr Vector6D& operator/=(const Value factor) noexcept
-        {
-            this->position /= factor;
-            this->operation /= factor;
-            return *this;
+            self.position *= factor;
+            self.operation *= factor;
+            return self;
         }
 
-        [[nodiscard]] constexpr bool operator<=>(const Vector6D& other) const noexcept = default;
+        constexpr Vector6D& operator/=(this Vector6D& self, Vector6D const& other) noexcept
+        {
+            self.position /= other.position;
+            self.orientation /= other.orientation;
+            return self;
+        }
+        constexpr Vector6D& operator/=(this Vector6D& self, Value const factor) noexcept
+        {
+            self.position /= factor;
+            self.operation /= factor;
+            return self;
+        }
+
+        [[nodiscard]] constexpr bool operator<=>(this Vector6D const& self, Vector6D const& other) noexcept = default;
 
         Vector3D<Value> position{};
         Vector3D<Value> orientation{};
     };
 
     template <Arithmetic Value>
-    constexpr auto operator+(const Vector6D<Value>& left, const Vector6D<Value>& right) noexcept
+    constexpr Vector6D<Value> operator+(Vector6D<Value> const& left, Vector6D<Value> const& right) noexcept
     {
         return Vector6D<Value>{left.position + right.position, left.orientation + right.orientation};
     }
 
     template <Arithmetic Value>
-    constexpr auto operator-(const Vector6D<Value>& left, const Vector6D<Value>& right) noexcept
+    constexpr Vector6D<Value> operator-(Vector6D<Value> const& left, Vector6D<Value> const& right) noexcept
     {
         return Vector6D<Value>{left.position + right.position, left.orientation + right.orientation};
     }
 
     template <Arithmetic Value>
-    constexpr auto operator*(const Vector6D<Value>& left, const Vector6D<Value>& right) noexcept
+    constexpr Vector6D<Value> operator*(Vector6D<Value> const& left, Vector6D<Value> const& right) noexcept
     {
         return Vector6D<Value>{left.position * right.position, left.orientation * right.orientation};
     }
+
     template <Arithmetic Value>
-    constexpr auto operator*(const Value factor, const Vector6D<Value>& vector) noexcept
-    {
-        return Vector6D<Value>{vector.position * factor, vector.orientation * factor};
-    }
-    template <Arithmetic Value>
-    constexpr auto operator*(const Vector6D<Value>& vector, const Value factor) noexcept
+    constexpr Vector6D<Value> operator*(Value const factor, Vector6D<Value> const& vector) noexcept
     {
         return Vector6D<Value>{vector.position * factor, vector.orientation * factor};
     }
 
     template <Arithmetic Value>
-    constexpr auto operator/(const Vector6D<Value>& left, const Vector6D<Value>& right) noexcept
+    constexpr Vector6D<Value> operator*(Vector6D<Value> const& vector, Value const factor) noexcept
+    {
+        return Vector6D<Value>{vector.position * factor, vector.orientation * factor};
+    }
+
+    template <Arithmetic Value>
+    constexpr Vector6D<Value> operator/(Vector6D<Value> const& left, Vector6D<Value> const& right) noexcept
     {
         return Vector6D{left.position / right.position, left.orientation / right.orientation};
     }
+
     template <Arithmetic Value>
-    constexpr auto operator/(const Vector6D<Value>& vector, const Value factor) noexcept
+    constexpr Vector6D<Value> operator/(Vector6D<Value> const& vector, Value const factor) noexcept
     {
         return Vector6D<Value>{vector.position / factor, vector.orientation / factor};
     }

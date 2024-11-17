@@ -1,5 +1,8 @@
 #include "filters.hpp"
 #include "matrix.hpp"
+#include "rotation3d.hpp"
+#include "vector3d.hpp"
+#include "vector6d.hpp"
 
 int main([[maybe_unused]] const int argc, [[maybe_unused]] char const* argv[])
 {

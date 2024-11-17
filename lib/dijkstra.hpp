@@ -46,7 +46,7 @@ namespace Algorithm {
     {
         LocationToParent location_to_parent{};
         location_to_parent.reserve(graph.size());
-        for (const auto& [location, neighbors] : graph) {
+        for (auto const& [location, neighbors] : graph) {
             // start with default initialized parent location
             location_to_parent.emplace_hint(location_to_parent.cend(), location, Location{});
         }
@@ -57,7 +57,7 @@ namespace Algorithm {
     {
         LocationToCost location_to_cost{};
         location_to_cost.reserve(graph.size());
-        for (const auto& [location, neighbors] : graph) {
+        for (auto const& [location, neighbors] : graph) {
             // start with infinity initialized cost
             location_to_cost.emplace_hint(location_to_cost.cend(), location, std::numeric_limits<Location>::max());
         }
@@ -93,12 +93,12 @@ namespace Algorithm {
                 if (current_location == goal) {
                     break;
                 }
-                const auto& neighbor_location_to_distance{graph.at(current_location)};
-                for (const auto& [neighbor_location, distance] : neighbor_location_to_distance) {
+                auto const& neighbor_location_to_distance{graph.at(current_location)};
+                for (auto const& [neighbor_location, distance] : neighbor_location_to_distance) {
                     if (locations_visited.find(neighbor_location) == locations_visited.cend()) {
-                        const auto& old_cost{location_to_cost.at(neighbor_location)};
-                        const auto& distance{neighbor_location_to_distance.at(neighbor_location)};
-                        const auto& new_cost{location_to_cost.at(current_location) + distance};
+                        auto const& old_cost{location_to_cost.at(neighbor_location)};
+                        auto const& distance{neighbor_location_to_distance.at(neighbor_location)};
+                        auto const& new_cost{location_to_cost.at(current_location) + distance};
 
                         if (new_cost < old_cost) {
                             location_to_cost.at(neighbor_location) = new_cost;
