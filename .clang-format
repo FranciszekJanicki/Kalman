@@ -24,6 +24,7 @@ AlignTrailingComments: true
 BinPackArguments: false
 BinPackParameters: false
 BraceWrapping:
+  SplitEmptyFunction: false
   AfterClass: false  
   AfterStruct: false
   AfterControlStatement: false

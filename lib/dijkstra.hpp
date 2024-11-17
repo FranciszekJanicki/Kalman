@@ -29,7 +29,7 @@ namespace Algorithm {
         using Path = std::vector<Location>;
     }; // namespace
 
-    static auto make_path(const LocationToParent& location_to_parent, const Location& start, const Location& goal)
+    static auto make_path(LocationToParent const& location_to_parent, Location const& start, Location const& goal)
     {
         Path path{};
         path.reserve(location_to_parent.size());
@@ -42,7 +42,7 @@ namespace Algorithm {
         return path;
     }
 
-    static auto make_location_to_empty_parent(const Graph& graph)
+    static auto make_location_to_empty_parent(Graph const& graph)
     {
         LocationToParent location_to_parent{};
         location_to_parent.reserve(graph.size());
@@ -53,7 +53,7 @@ namespace Algorithm {
         return location_to_parent;
     }
 
-    static auto make_location_to_infinite_cost(const Graph& graph)
+    static auto make_location_to_infinite_cost(Graph const& graph)
     {
         LocationToCost location_to_cost{};
         location_to_cost.reserve(graph.size());
@@ -64,21 +64,21 @@ namespace Algorithm {
         return location_to_cost;
     }
 
-    static auto make_empty_locations_to_visit(const Location& start)
+    static auto make_empty_locations_to_visit(Location const& start)
     {
         LocationsToVisit locations_to_visit{};
         locations_to_visit.push(start);
         return locations_to_visit;
     }
 
-    static auto make_empty_locations_visited(const Graph& graph)
+    static auto make_empty_locations_visited(Graph const& graph)
     {
         LocationsVisited locations_visited{};
         locations_visited.reserve(graph.size());
         return locations_visited;
     }
 
-    [[nodiscard]] auto dijkstra(const Graph& graph, const Location& start, const Location& goal)
+    [[nodiscard]] auto dijkstra(Graph const& graph, Location const& start, Location const& goal)
     {
         auto locations_to_visit{make_empty_locations_to_visit(start)};
         auto locations_visited{make_empty_locations_visited(graph)};
@@ -86,7 +86,7 @@ namespace Algorithm {
         auto location_to_cost{make_location_to_infinite_cost(graph)};
 
         while (!locations_to_visit.empty()) {
-            const auto current_location{locations_to_visit.top()};
+            auto const current_location{locations_to_visit.top()};
             locations_to_visit.pop();
 
             if (locations_visited.find(current_location) == locations_visited.cend()) {

@@ -65,163 +65,159 @@ namespace Linalg {
         using ExpectedDet = std::expected<Value, MatrixError>;
         using Unexpected = std::unexpected<MatrixError>;
 
-        [[nodiscard]] static constexpr Matrix row(const std::initializer_list<Value> row)
+        [[nodiscard]] static constexpr Matrix row(std::initializer_list<Value> const row)
         {
             return Matrix{make_row(row)};
         }
 
-        [[nodiscard]] static constexpr Matrix row(const Size rows)
+        [[nodiscard]] static constexpr Matrix row(Size const rows)
         {
             return Matrix{make_row(rows)};
         }
 
-        [[nodiscard]] static constexpr Matrix column(const std::initializer_list<Value> column)
+        [[nodiscard]] static constexpr Matrix column(std::initializer_list<Value> const column)
         {
             return Matrix{make_column(column)};
         }
 
-        [[nodiscard]] static constexpr Matrix column(const Size columns)
+        [[nodiscard]] static constexpr Matrix column(Size const columns)
         {
             return Matrix{make_column(columns)};
         }
 
-        [[nodiscard]] static constexpr Matrix diagonal(const std::initializer_list<Value> diagonal)
+        [[nodiscard]] static constexpr Matrix diagonal(std::initializer_list<Value> const diagonal)
         {
             return Matrix{make_diagonal(diagonal)};
         }
 
-        [[nodiscard]] static constexpr Matrix eye(const Size dimensions)
+        [[nodiscard]] static constexpr Matrix eye(Size const dimensions)
         {
             return Matrix{make_eye(dimensions)};
         }
 
-        [[nodiscard]] static constexpr Matrix ones(const Size rows, const Size columns)
+        [[nodiscard]] static constexpr Matrix ones(Size const rows, Size const columns)
         {
             return Matrix{make_ones(rows, columns)};
         }
 
-        [[nodiscard]] static constexpr Matrix zeros(const Size rows, const Size columns)
+        [[nodiscard]] static constexpr Matrix zeros(Size const rows, Size const columns)
         {
             return Matrix{make_zeros(rows, columns)};
         }
 
         constexpr Matrix() noexcept = default;
 
-        explicit constexpr Matrix(const std::initializer_list<const std::initializer_list<Value>> data) : data_{data}
-        {
-        }
+        explicit constexpr Matrix(std::initializer_list<std::initializer_list<Value> const> const data) : data_{data}
+        {}
 
-        constexpr Matrix(const Size rows, const Size columns) : data_{make_zeros(rows, columns)}
-        {
-        }
+        constexpr Matrix(Size const rows, Size const columns) : data_{make_zeros(rows, columns)}
+        {}
 
         explicit constexpr Matrix(MatrixData&& data) noexcept : data_{std::forward<MatrixData>(data)}
-        {
-        }
+        {}
 
-        explicit constexpr Matrix(const MatrixData& data) : data_{data}
-        {
-        }
+        explicit constexpr Matrix(MatrixData const& data) : data_{data}
+        {}
 
-        constexpr Matrix(const Matrix& other) = default;
+        constexpr Matrix(Matrix const& other) = default;
 
         constexpr Matrix(Matrix&& other) noexcept = default;
 
         constexpr ~Matrix() noexcept = default;
 
-        constexpr Matrix& operator=(const Matrix& other) = default;
+        constexpr Matrix& operator=(Matrix const& other) = default;
 
         constexpr Matrix& operator=(Matrix&& other) noexcept = default;
 
-        constexpr void operator=(MatrixData&& data) noexcept
+        constexpr void operator=(this Matrix& self, MatrixData&& data) noexcept
         {
-            this->data_ = std::forward<MatrixData>(data);
+            self.data_ = std::forward<MatrixData>(data);
         }
 
-        constexpr void operator=(const MatrixData& data)
+        constexpr void operator=(this Matrix& self, MatrixData const& data)
         {
-            this->data_ = data;
+            self.data_ = data;
         }
 
-        constexpr Matrix& operator+=(const Matrix other) noexcept
-        {
-            // assert correct dimensions
-            assert(other.rows() == this->rows());
-            assert(other.columns() == this->rows());
-
-            for (Size row{0}; row < this->rows(); ++row) {
-                for (Size column{0}; column < this->columns(); ++column) {
-                    this->data_[row][column] += other.data_[row][column];
-                }
-            }
-            return *this;
-        }
-
-        constexpr Matrix& operator-=(const Matrix& other) noexcept
+        constexpr Matrix& operator+=(this Matrix& self, Matrix const& other) noexcept
         {
             // assert correct dimensions
-            assert(other.rows() == this->rows());
-            assert(other.columns() == this->rows());
+            assert(other.rows() == self.rows());
+            assert(other.columns() == self.rows());
 
-            for (Size row{0}; row < this->rows(); ++row) {
-                for (Size column{0}; column < this->columns(); ++column) {
-                    this->data_[row][column] -= other.data_[row][column];
+            for (Size row{0}; row < self.rows(); ++row) {
+                for (Size column{0}; column < self.columns(); ++column) {
+                    self.data_[row][column] += other.data_[row][column];
                 }
             }
-            return *this;
+            return self;
         }
 
-        constexpr Matrix& operator*=(const Value& factor)
+        constexpr Matrix& operator-=(this Matrix& self, Matrix const& other) noexcept
+        {
+            // assert correct dimensions
+            assert(other.rows() == self.rows());
+            assert(other.columns() == self.rows());
+
+            for (Size row{0}; row < self.rows(); ++row) {
+                for (Size column{0}; column < self.columns(); ++column) {
+                    self.data_[row][column] -= other.data_[row][column];
+                }
+            }
+            return self;
+        }
+
+        constexpr Matrix& operator*=(this Matrix& self, Value const& factor)
         {
             // factor is 1 then dont need to do anything
             if (factor == 1) {
-                return *this;
+                return self;
             }
 
-            this->data_ = scale(this->data_, factor);
-            return *this;
+            self.data_ = scale(self.data_, factor);
+            return self;
         }
 
-        constexpr Matrix& operator*=(const Matrix& other)
+        constexpr Matrix& operator*=(this Matrix& self, Matrix const& other)
         {
             // assert correct dimensions
-            assert(this->columns() == other.rows());
+            assert(self.columns() == other.rows());
 
-            if (auto expected_product{Matrix::product(this->data_, other.data_)}; expected_product.has_value()) {
-                this->data_ = std::move(expected_product).value();
-                return *this;
+            if (auto expected_product{Matrix::product(self.data_, other.data_)}; expected_product.has_value()) {
+                self.data_ = std::move(expected_product).value();
+                return self;
             } else {
                 print_error(expected_product.error());
                 std::unreachable();
             }
         }
 
-        constexpr Matrix& operator/=(const Value& factor)
+        constexpr Matrix& operator/=(this Matrix& self, Value const& factor)
         {
             // assert no division by 0!!!
             assert(factor != 0);
 
             // factor is 1 then dont need to do anything
             if (factor == 1) {
-                return *this;
+                return self;
             }
 
             // division is multiplication by inverse
-            this->data_ = scale(this->data_, 1 / factor);
-            return *this;
+            self.data_ = scale(self.data_, 1 / factor);
+            return self;
         }
 
-        constexpr Matrix& operator/=(const Matrix& other)
+        constexpr Matrix& operator/=(this Matrix& self, Matrix const& other)
         {
             // assert correct dimensions
-            assert(this->columns() == other.rows());
+            assert(self.columns() == other.rows());
 
             // division is multiplication by inverse
             if (auto expected_inverse{inverse(other.data_)}; expected_inverse.has_value()) {
-                if (auto expected_product{product(this->data_, expected_inverse.value())};
+                if (auto expected_product{product(self.data_, expected_inverse.value())};
                     expected_product.has_value()) {
-                    *this = std::move(expected_product).value();
-                    return *this;
+                    self = std::move(expected_product).value();
+                    return self;
                 } else {
                     print_error(expected_product.error());
                     std::unreachable();
@@ -232,16 +228,16 @@ namespace Linalg {
             }
         }
 
-        constexpr Matrix& operator^=(const Value& factor)
+        constexpr Matrix& operator^=(this Matrix& self, Value const& factor)
         {
-            assert(this->is_square());
+            assert(self.is_square());
             for (Value i{}; i < factor - 1; ++i) {
-                this->data_ *= this->data_;
+                self.data_ *= self.data_;
             }
-            return *this;
+            return self;
         }
 
-        friend constexpr Matrix operator+(const Matrix& left, const Matrix& right)
+        friend constexpr Matrix operator+(Matrix const& left, Matrix const& right)
         {
             // assert correct dimensions
             assert(left.rows() == right.rows());
@@ -250,7 +246,7 @@ namespace Linalg {
             return Matrix{sum(left.data_, right.data_)};
         }
 
-        friend constexpr Matrix operator-(const Matrix& left, const Matrix& right)
+        friend constexpr Matrix operator-(Matrix const& left, Matrix const& right)
         {
             // assert correct dimensions
             assert(left.rows() == right.rows());
@@ -259,7 +255,7 @@ namespace Linalg {
             return Matrix{difference(left.data_, right.data_)};
         }
 
-        friend constexpr Matrix operator*(const Value& factor, const Matrix& matrix)
+        friend constexpr Matrix operator*(Value const& factor, Matrix const& matrix)
         {
             // factor is 1 then dont need to do anything
             if (factor == 1) {
@@ -269,7 +265,7 @@ namespace Linalg {
             return Matrix{scale(matrix.data_, factor)};
         }
 
-        friend constexpr Matrix operator*(const Matrix& matrix, const Value& factor)
+        friend constexpr Matrix operator*(Matrix const& matrix, Value const& factor)
         {
             // factor is 1 then dont need to do anything
             if (factor == 1) {
@@ -279,7 +275,7 @@ namespace Linalg {
             return Matrix{scale(matrix.data_, factor)};
         }
 
-        friend constexpr Matrix operator*(const Matrix& left, const Matrix& right)
+        friend constexpr Matrix operator*(Matrix const& left, Matrix const& right)
         {
             // assert correct dimensions
             assert(left.columns() == right.rows());
@@ -292,7 +288,7 @@ namespace Linalg {
             }
         }
 
-        friend constexpr Matrix operator/(const Matrix& matrix, const Value& factor)
+        friend constexpr Matrix operator/(Matrix const& matrix, Value const& factor)
         {
             // assert no division by 0!!!
             assert(factor != 0);
@@ -306,7 +302,7 @@ namespace Linalg {
             return Matrix{scale(matrix.data_, 1 / factor)};
         }
 
-        friend constexpr Matrix operator/(const Matrix& left, const Matrix& right)
+        friend constexpr Matrix operator/(Matrix const& left, Matrix const& right)
         {
             // assert correct dimensions
             assert(left.columns() == right.rows());
@@ -325,7 +321,7 @@ namespace Linalg {
             }
         }
 
-        friend constexpr Matrix operator^(const Matrix& matrix, const Value& factor)
+        friend constexpr Matrix operator^(Matrix const& matrix, Value const& factor)
         {
             assert(matrix.is_square());
             auto result{matrix.data_};
@@ -335,210 +331,211 @@ namespace Linalg {
             return result;
         }
 
-        explicit constexpr operator MatrixData() && noexcept
+        explicit constexpr operator MatrixData(this Matrix&& self) noexcept
         {
-            return std::forward<Matrix>(*this).data_;
+            return std::forward<Matrix>(self).data_;
         }
 
-        explicit constexpr operator MatrixData() const& noexcept
+        explicit constexpr operator MatrixData(this Matrix const& self) noexcept
         {
-            return this->data_;
+            return self.data_;
         }
 
-        [[nodiscard]] constexpr const VectorData& operator[](const Size row) const noexcept
+        [[nodiscard]] constexpr VectorData const& operator[](this Matrix const& self, Size const row) noexcept
         {
-            assert(row <= this->rows());
-            return this->data_[row];
+            assert(row <= self.rows());
+            return self.data_[row];
         }
 
-        [[nodiscard]] constexpr VectorData& operator[](const Size row) noexcept
+        [[nodiscard]] constexpr VectorData& operator[](this Matrix& self, Size const row) noexcept
         {
-            assert(row <= this->rows());
-            return this->data_[row];
+            assert(row <= self.rows());
+            return self.data_[row];
         }
 
-        [[nodiscard]] constexpr Value& operator[](const Size row, const Size column) noexcept
+        [[nodiscard]] constexpr Value& operator[](this Matrix& self, Size const row, Size const column) noexcept
         {
-            assert(row <= this->rows());
-            assert(column <= this->columns());
-            return this->data_[row][column];
+            assert(row <= self.rows());
+            assert(column <= self.columns());
+            return self.data_[row][column];
         }
 
-        [[nodiscard]] constexpr const Value& operator[](const Size row, const Size column) const noexcept
+        [[nodiscard]] constexpr Value const&
+        operator[](this Matrix const& self, Size const row, Size const column) noexcept
         {
-            assert(row <= this->rows());
-            assert(column <= this->columns());
-            return this->data_[row][column];
+            assert(row <= self.rows());
+            assert(column <= self.columns());
+            return self.data_[row][column];
         }
 
-        [[nodiscard]] constexpr bool operator<=>(const Matrix& other) const noexcept = default;
+        [[nodiscard]] constexpr bool operator<=>(this Matrix const& self, Matrix const& other) noexcept = default;
 
-        constexpr void print() const noexcept
+        constexpr void print(this Matrix const& self) noexcept
         {
-            Matrix::print(this->data_);
+            Matrix::print(self.data_);
         }
 
-        [[nodiscard]] constexpr const MatrixData& data() const& noexcept
+        [[nodiscard]] constexpr MatrixData const& data(this Matrix const& self) noexcept
         {
-            return this->data_;
+            return self.data_;
         }
 
-        [[nodiscard]] constexpr MatrixData&& data() && noexcept
+        [[nodiscard]] constexpr MatrixData&& data(this Matrix&& self) noexcept
         {
-            return std::forward<Matrix>(*this).data_;
+            return std::forward<Matrix>(self).data_;
         }
 
-        constexpr void data(MatrixData&& data) noexcept
+        constexpr void data(this Matrix& self, MatrixData&& data) noexcept
         {
-            this->data_ = std::forward<MatrixData>(data);
+            self.data_ = std::forward<MatrixData>(data);
         }
 
-        constexpr void data(const MatrixData& data)
+        constexpr void data(this Matrix& self, MatrixData const& data)
         {
-            this->data_ = data;
+            self.data_ = data;
         }
 
-        constexpr void swap(MatrixData& other)
+        constexpr void swap(this Matrix& self, MatrixData& other)
         {
-            std::swap(this->data_, other.data_);
+            std::swap(self.data_, other.data_);
         }
 
-        constexpr void insert_row(const Size row, const VectorData& new_row)
+        constexpr void insert_row(this Matrix& self, Size const row, VectorData const& new_row)
         {
-            assert(new_row.size() == this->columns());
-            this->data_.insert(std::next(this->data_.begin(), row), new_row);
+            assert(new_row.size() == self.columns());
+            self.data_.insert(std::next(self.data_.begin(), row), new_row);
         }
 
-        constexpr void insert_column(const Size column, const VectorData& new_column)
+        constexpr void insert_column(this Matrix& self, Size const column, VectorData const& new_column)
         {
-            assert(new_column.size() == this->rows());
-            for (auto const& row : this->data_) {
+            assert(new_column.size() == self.rows());
+            for (auto const& row : self.data_) {
                 row.insert(std::next(row.begin(), column), new_column[column]);
             }
         }
 
-        constexpr void delete_row(const Size row)
+        constexpr void delete_row(this Matrix& self, Size const row)
         {
-            assert(row <= this->rows());
-            this->data_.erase(std::next(this->data_.begin(), row));
+            assert(row <= self.rows());
+            self.data_.erase(std::next(self.data_.begin(), row));
         }
 
-        constexpr void delete_column(const Size column)
+        constexpr void delete_column(this Matrix& self, Size const column)
         {
-            assert(column <= this->columns());
-            for (Size row{0}; row < this->rows(); ++row) {
-                this->data_[row].erase(std::next(this->data_[row].begin(), column));
+            assert(column <= self.columns());
+            for (Size row{0}; row < self.rows(); ++row) {
+                self.data_[row].erase(std::next(self.data_[row].begin(), column));
             }
         }
 
-        constexpr const VectorData& end_row() const noexcept
+        constexpr VectorData const& end_row(this Matrix const& self) noexcept
         {
-            return this->data_.back();
+            return self.data_.back();
         }
 
-        constexpr VectorData& end_row() noexcept
+        constexpr VectorData& end_row(this Matrix& self) noexcept
         {
-            return this->data_.back();
+            return self.data_.back();
         }
 
-        constexpr const VectorData& begin_row() const noexcept
+        constexpr VectorData const& begin_row(this Matrix const& self) noexcept
         {
-            return this->data_.front();
+            return self.data_.front();
         }
 
-        constexpr VectorData& begin_row() noexcept
+        constexpr VectorData& begin_row(this Matrix& self) noexcept
         {
-            return this->data_.front();
+            return self.data_.front();
         }
 
-        constexpr VectorData end_column() const
+        constexpr VectorData end_column(this Matrix const& self)
         {
             VectorData end_column{};
-            end_column.reserve(this->columns());
-            for (auto const& row : this->data_) {
+            end_column.reserve(self.columns());
+            for (auto const& row : self.data_) {
                 end_column.push_back(row.back());
             }
             return end_column;
         }
 
-        constexpr VectorData begin_column() const
+        constexpr VectorData begin_column(this Matrix const& self)
         {
             VectorData begin_column{};
-            begin_column.reserve(this->columns());
-            for (auto const& row : this->data_) {
+            begin_column.reserve(self.columns());
+            for (auto const& row : self.data_) {
                 begin_column.push_back(row.front());
             }
             return begin_column;
         }
 
-        constexpr void reserve(const Size rows, const Size columns)
+        constexpr void reserve(this Matrix& self, Size const rows, Size const columns)
         {
-            this->data_.reserve(rows);
-            for (auto& row : this->data_) {
+            self.data_.reserve(rows);
+            for (auto& row : self.data_) {
                 row.reserve(columns);
             }
         }
 
-        constexpr void resize(const Size rows, const Size columns)
+        constexpr void resize(this Matrix& self, Size const rows, Size const columns)
         {
-            this->data_.resize(rows);
-            for (auto& row : this->data_) {
+            self.data_.resize(rows);
+            for (auto& row : self.data_) {
                 row.resize(columns);
             }
         }
 
-        constexpr void erase()
+        constexpr void erase(this Matrix& self)
         {
-            this->data_.erase();
+            self.data_.erase();
         }
 
-        constexpr void clear()
+        constexpr void clear(this Matrix& self)
         {
-            this->data_.clear();
+            self.data_.clear();
         }
 
-        [[nodiscard]] constexpr bool is_empty() const noexcept
+        [[nodiscard]] constexpr bool is_empty(this Matrix const& self) noexcept
         {
-            return this->rows() == this->columns() == 0;
+            return self.rows() == self.columns() == 0;
         }
 
-        [[nodiscard]] constexpr bool is_square() const noexcept
+        [[nodiscard]] constexpr bool is_square(this Matrix const& self) noexcept
         {
-            return this->rows() == this->columns();
+            return self.rows() == self.columns();
         }
 
-        [[nodiscard]] constexpr Size rows() const noexcept
+        [[nodiscard]] constexpr Size rows(this Matrix const& self) noexcept
         {
-            return this->data_.size();
+            return self.data_.size();
         }
 
-        [[nodiscard]] constexpr Size columns() const noexcept
+        [[nodiscard]] constexpr Size columns(this Matrix const& self) noexcept
         {
-            return this->data_[0].size();
+            return self.data_[0].size();
         }
 
-        constexpr VectorData diagonal() const
+        constexpr VectorData diagonal(this Matrix const& self)
         {
-            assert(this->rows() == this->columns());
+            assert(self.rows() == self.columns());
 
             VectorData diagonale{};
-            diagonale.reserve(this->rows());
+            diagonale.reserve(self.rows());
 
-            for (Size diag{0}; diag < this->rows(); ++diag) {
-                diagonale.push_back(this->data_[diag][diag]);
+            for (Size diag{0}; diag < self.rows(); ++diag) {
+                diagonale.push_back(self.data_[diag][diag]);
             }
             return diagonale;
         }
 
-        constexpr void transpose()
+        constexpr void transpose(this Matrix& self)
         {
-            this->data_ = transposition(this->data_);
+            self.data_ = transposition(self.data_);
         }
 
-        constexpr void invert()
+        constexpr void invert(this Matrix& self)
         {
-            if (auto expected_inverse{Matrix::inverse(this->data_)}; expected_inverse.has_value()) {
-                this->data_ = std::move(expected_inverse).value();
+            if (auto expected_inverse{Matrix::inverse(self.data_)}; expected_inverse.has_value()) {
+                self.data_ = std::move(expected_inverse).value();
             } else {
                 print_error(expected_inverse.error());
                 std::unreachable();
@@ -546,7 +543,7 @@ namespace Linalg {
         }
 
     private:
-        static constexpr const char* matrix_error_to_string(const MatrixError MatrixError) noexcept
+        static constexpr const char* matrix_error_to_string(MatrixError const MatrixError) noexcept
         {
             switch (MatrixError) {
                 case MatrixError::WRONG_DIMS:
@@ -560,12 +557,12 @@ namespace Linalg {
             }
         }
 
-        static constexpr void print_error(const MatrixError MatrixError) noexcept
+        static constexpr void print_error(MatrixError const MatrixError) noexcept
         {
             fmt::print("%s", matrix_error_to_string(MatrixError));
         }
 
-        static constexpr void print(const MatrixData& data) noexcept
+        static constexpr void print(MatrixData const& data) noexcept
         {
             fmt::print("[");
 
@@ -594,7 +591,7 @@ namespace Linalg {
             fmt::print("]\n");
         }
 
-        static constexpr MatrixData make_matrix(const std::initializer_list<const std::initializer_list<Value>> data)
+        static constexpr MatrixData make_matrix(std::initializer_list<const std::initializer_list<Value>> const data)
         {
             MatrixData matrix{};
             matrix.reserve(data.size());
@@ -608,7 +605,7 @@ namespace Linalg {
             return matrix;
         }
 
-        static constexpr MatrixData make_zeros(const Size rows, const Size columns)
+        static constexpr MatrixData make_zeros(Size const rows, Size const columns)
         {
             MatrixData matrix{};
             matrix.reserve(rows);
@@ -622,7 +619,7 @@ namespace Linalg {
             return matrix;
         }
 
-        static constexpr MatrixData make_ones(const Size rows, const Size columns)
+        static constexpr MatrixData make_ones(Size const rows, Size const columns)
         {
             MatrixData matrix{};
             matrix.reserve(rows);
@@ -636,7 +633,7 @@ namespace Linalg {
             return matrix;
         }
 
-        static constexpr MatrixData make_diagonal(const std::initializer_list<Value> diagonal)
+        static constexpr MatrixData make_diagonal(std::initializer_list<Value> const diagonal)
         {
             MatrixData matrix{};
             matrix.reserve(diagonal.size());
@@ -654,7 +651,7 @@ namespace Linalg {
             return matrix;
         }
 
-        static constexpr MatrixData make_eye(const Size dimensions)
+        static constexpr MatrixData make_eye(Size const dimensions)
         {
             MatrixData matrix{};
             matrix.reserve(dimensions);
@@ -672,7 +669,7 @@ namespace Linalg {
             return matrix;
         }
 
-        static constexpr MatrixData make_row(const Size rows)
+        static constexpr MatrixData make_row(Size const rows)
         {
             VectorData row_vector{};
             row_vector.reserve(rows);
@@ -681,10 +678,10 @@ namespace Linalg {
             }
             return row_vector;
         }
-        static constexpr MatrixData make_row(const std::initializer_list<Value> data)
+        static constexpr MatrixData make_row(std::initializer_list<Value> const data)
         {
             VectorData row_vector{};
-            const auto columns{data.size()};
+            auto const columns{data.size()};
             row_vector.reserve(columns);
             auto make_column{[column{data.begin()}]() -> decltype(auto) { return *(column)++; }};
             for (Size row{}; row < data.size(); ++row) {
@@ -693,7 +690,7 @@ namespace Linalg {
             return row_vector;
         }
 
-        static constexpr MatrixData make_column(const Size columns)
+        static constexpr MatrixData make_column(Size const columns)
         {
             MatrixData column_vector{};
             auto& column{column_vector.emplace_back()};
@@ -704,7 +701,7 @@ namespace Linalg {
             return column_vector;
         }
 
-        static constexpr MatrixData make_column(const std::initializer_list<Value> data)
+        static constexpr MatrixData make_column(std::initializer_list<Value> const data)
         {
             MatrixData column_vector{};
             auto& column{column_vector.emplace_back()};
@@ -717,10 +714,10 @@ namespace Linalg {
         }
 
         static constexpr ExpectedMatrix
-        minor(const MatrixData& data, const Size row, const Size column, const Size dimensions)
+        minor(MatrixData const& data, Size const row, Size const column, Size const dimensions)
         {
-            const Size rows{data.size()};
-            const Size columns{data[0].size()};
+            Size const rows{data.size()};
+            Size const columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -756,10 +753,10 @@ namespace Linalg {
             return ExpectedMatrix{std::move(minor)};
         }
 
-        static constexpr ExpectedDet determinant(const MatrixData& data, Size dimensions)
+        static constexpr ExpectedDet determinant(MatrixData const& data, Size const dimensions)
         {
-            const Size rows{data.size()};
-            const Size columns{data[0].size()};
+            Size const rows{data.size()};
+            Size const columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -810,10 +807,10 @@ namespace Linalg {
             return ExpectedDet{det};
         }
 
-        static constexpr MatrixData transposition(const MatrixData& data)
+        static constexpr MatrixData transposition(MatrixData const& data)
         {
-            const Size new_rows{data.size()};
-            const Size new_columns{data[0].size()};
+            Size const new_rows{data.size()};
+            Size const new_columns{data[0].size()};
 
             // data is scalar, can omit later code
             if ((new_rows == new_columns) == 1)
@@ -828,10 +825,10 @@ namespace Linalg {
             return transposition;
         }
 
-        static constexpr ExpectedMatrix adjoint(const MatrixData& data)
+        static constexpr ExpectedMatrix adjoint(MatrixData const& data)
         {
-            const Size rows{data.size()};
-            const Size columns{data[0].size()};
+            Size const rows{data.size()};
+            Size const columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -839,7 +836,7 @@ namespace Linalg {
             }
 
             // matrixsquare
-            const Size dimensions{rows};
+            Size const dimensions{rows};
             // data is scalar, can omit later code
             if (dimensions == 1) {
                 return ExpectedMatrix{data};
@@ -882,10 +879,10 @@ namespace Linalg {
             return ExpectedMatrix{transposition(complement)};
         }
 
-        static constexpr ExpectedMatrix inverse(const MatrixData& data)
+        static constexpr ExpectedMatrix inverse(MatrixData const& data)
         {
-            const Size rows{data.size()};
-            const Size columns{data[0].size()};
+            Size const rows{data.size()};
+            Size const columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -893,14 +890,14 @@ namespace Linalg {
             }
 
             // matrixsquare
-            const Size dimensions{rows};
+            Size const dimensions{rows};
             // data is scalar, can omit later code
             if (dimensions == 1) {
                 return ExpectedMatrix{data};
             }
 
             if (auto expected_det{determinant(data, dimensions)}; expected_det.has_value()) {
-                const auto det{std::move(expected_det).value()};
+                auto const det{std::move(expected_det).value()};
 
                 // assert correct determinant
                 assert(det != 0);
@@ -909,7 +906,7 @@ namespace Linalg {
                 }
 
                 if (auto expected_adjoint{adjoint(data)}; expected_adjoint.has_value()) {
-                    const auto adjoint{std::move(expected_adjoint).value()};
+                    auto const adjoint{std::move(expected_adjoint).value()};
 
                     // inverse is adjoint matrixdivided by det factor
                     // division is multiplication by inverse
@@ -924,10 +921,10 @@ namespace Linalg {
             }
         }
 
-        static constexpr ExpectedMatrix upper_triangular(const MatrixData& data)
+        static constexpr ExpectedMatrix upper_triangular(MatrixData const& data)
         {
-            const Size rows{data.size()};
-            const Size columns{data[0].size()};
+            Size const rows{data.size()};
+            Size const columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -935,7 +932,7 @@ namespace Linalg {
             }
 
             // matrixsquare
-            const Size dimensions{rows};
+            Size const dimensions{rows};
             // data is scalar
             if (dimensions == 1)
                 return ExpectedMatrix{data};
@@ -944,10 +941,10 @@ namespace Linalg {
             return ExpectedMatrix{transposition(lower_triangular(data))};
         }
 
-        static constexpr ExpectedMatrix lower_triangular(const MatrixData& data)
+        static constexpr ExpectedMatrix lower_triangular(MatrixData const& data)
         {
-            const Size rows{data.size()};
-            const Size columns{data[0].size()};
+            Size const rows{data.size()};
+            Size const columns{data[0].size()};
             // assert correct dimensions
             assert(rows == columns);
             if (rows != columns) {
@@ -955,7 +952,7 @@ namespace Linalg {
             }
 
             // matrixsquare
-            const Size dimensions = rows; // = columns;
+            Size const dimensions = rows; // = columns;
             // data is scalar
             if (dimensions == 1) {
                 return ExpectedMatrix{data};
@@ -986,12 +983,12 @@ namespace Linalg {
             return ExpectedMatrix{std::move(lower_triangular)};
         }
 
-        static constexpr ExpectedMatrix product(const MatrixData& left, const MatrixData& right)
+        static constexpr ExpectedMatrix product(MatrixData const& left, MatrixData const& right)
         {
-            const Size left_rows{left.size()};
-            const Size right_rows{right.size()};
-            const Size left_columns = {left[0].size()};
-            const Size right_columns{right[0].size()};
+            Size const left_rows{left.size()};
+            Size const right_rows{right.size()};
+            Size const left_columns = {left[0].size()};
+            Size const right_columns{right[0].size()};
 
             // assert correct dimensions
             assert(left_columns == right_rows);
@@ -999,8 +996,8 @@ namespace Linalg {
                 return Unexpected{MatrixError::WRONG_DIMS};
             }
 
-            const Size product_rows{left_rows};
-            const Size product_columns{right_columns};
+            Size const product_rows{left_rows};
+            Size const product_columns{right_columns};
             auto product{make_zeros(product_rows, product_columns)};
 
             for (Size left_row{0}; left_row < left_rows; ++left_row) {
@@ -1015,7 +1012,7 @@ namespace Linalg {
             return ExpectedMatrix{std::move(product)};
         }
 
-        static constexpr MatrixData sum(const MatrixData& left, const MatrixData& right) noexcept
+        static constexpr MatrixData sum(MatrixData const& left, MatrixData const& right) noexcept
         {
             assert(left.size() == right.size());
             assert(left[0].size() == right[0].size());
@@ -1029,7 +1026,7 @@ namespace Linalg {
             return sum;
         }
 
-        static constexpr MatrixData difference(const MatrixData& left, const MatrixData& right) noexcept
+        static constexpr MatrixData difference(MatrixData const& left, MatrixData const& right) noexcept
         {
             assert(left.size() == right.size());
             assert(left[0].size() == right[0].size());
@@ -1043,10 +1040,10 @@ namespace Linalg {
             return difference;
         }
 
-        static constexpr MatrixData scale(const MatrixData& data, const Value factor)
+        static constexpr MatrixData scale(MatrixData const& data, Value const factor)
         {
-            const Size rows{data.size()};
-            const Size columns{data[0].size()};
+            Size const rows{data.size()};
+            Size const columns{data[0].size()};
 
             // factor is 1 then dont need to do anything
             if (factor == 1) {
