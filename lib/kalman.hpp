@@ -35,6 +35,38 @@ namespace Filter {
             Matrix kalman_gain{};            // states x measurements
         };
 
+        [[nodiscard]] static constexpr FilterModel make_filter_model(Matrix&& state_transition,
+                                                                     Matrix&& input_transition,
+                                                                     Matrix&& state_covariance,
+                                                                     Matrix&& input_covariance)
+        {
+            auto states{state_transition.rows()};
+            auto inputs{state_transition.columns()};
+            return FilterModel{states,
+                               inputs,
+                               std::forward<Matrix>(state_transition),
+                               std::forward<Matrix>(input_transition),
+                               std::forward<Matrix>(state_covariance),
+                               std::forward<Matrix>(input_covariance)};
+        }
+
+        [[nodiscard]] static constexpr MeasureModel make_measure_model(Matrix&& measurement_transition,
+                                                                       Matrix&& process_noise,
+                                                                       Matrix&& innovation,
+                                                                       Matrix&& residual_covariance,
+                                                                       Matrix&& kalman_gain)
+        {
+            auto states{measurement_transition.rows()};
+            auto measurements{measurement_transition.columns()};
+            return MeasureModel{states,
+                                measurements,
+                                std::forward<Matrix>(measurement_transition),
+                                std::forward<Matrix>(process_noise),
+                                std::forward<Matrix>(innovation),
+                                std::forward<Matrix>(residual_covariance),
+                                std::forward<Matrix>(kalman_gain)};
+        }
+
         constexpr Kalman(FilterModel const& filter_model, MeasureModel const& measure_model) :
             filter_model_{filter_model}, measure_model_{measure_model}
         {
@@ -48,10 +80,11 @@ namespace Filter {
             initialize();
         }
 
-        constexpr void operator()(this Kalman& self, Matrix const& measurement)
+        [[nodiscard]] constexpr Matrix operator()(this Kalman& self, Matrix const& measurement)
         {
             self.predict();
             self.update(measurement);
+            return self.state_;
         }
 
         [[nodiscard]] constexpr FilterModel&& filter_model(this Kalman&& self) noexcept
@@ -124,7 +157,7 @@ namespace Filter {
                  self.filter_model_.input_transition);
         }
 
-        constexpr void update(this Kalman& self, const Matrix& measurement)
+        constexpr void update(this Kalman& self, Matrix const& measurement)
         {
             if (!self.is_initialized_) {
                 fmt::print("Filter uninitialized!");
@@ -187,16 +220,9 @@ namespace Filter {
 
         bool is_initialized_{false};
 
-        [[maybe_unused]] Value step_time_{1};
-        [[maybe_unused]] Value current_time_{0};
-        [[maybe_unused]] Value start_time_{0};
-
         // calculated
         Matrix state_{};           // states x 1
         Matrix predicted_state_{}; // states x 1
-
-        [[maybe_unused]] Matrix input_{};       // inputs x 1
-        [[maybe_unused]] Matrix measurement_{}; // measurments x  1
 
         // constants
         FilterModel filter_model_{};
