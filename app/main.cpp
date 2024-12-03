@@ -4,29 +4,27 @@
 #include "vector3d.hpp"
 #include "vector6d.hpp"
 #include <fmt/core.h>
+#include <functional>
 
 int main([[maybe_unused]] const int argc, [[maybe_unused]] char const* argv[])
 {
-    auto make_kalman{&Filter::make_kalman<float>};
-    auto make_measure_model{&Filter::Kalman<float>::make_measure_model};
-    auto make_filter_model{&Filter::Kalman<float>::make_filter_model};
-    auto ones{&Linalg::Matrix<float>::ones};
+    using Matrix = Linalg::Matrix<float>;
+    using Kalman = Filter::Kalman<float>;
 
-    const auto states{2U};
-    const auto measurements{2U};
-    const auto inputs{2U};
+    const auto states{1};
+    const auto measurements{1};
+    const auto inputs{1};
 
-    auto kalman = make_kalman(
-        make_filter_model(ones(states, inputs), ones(states, inputs), ones(states, states), ones(inputs, inputs)),
-        make_measure_model(ones(measurements, states),
-                           ones(measurements, measurements),
-                           ones(measurements, 1U),
-                           ones(measurements, measurements),
-                           ones(states, measurements)));
+    Kalman kalman{Matrix::ones(states, inputs),
+                  Matrix::ones(states, states),
+                  Matrix::ones(states, inputs),
+                  Matrix::ones(inputs, inputs),
+                  Matrix::ones(measurements, states),
+                  Matrix::ones(measurements, measurements)};
 
-    for (auto i{0U}; i < 100U; ++i) {
-        kalman(ones(measurements, 1U));
-        fmt::print("dupa");
+    auto i{0};
+    while (i++ < 100) {
+        std::invoke(kalman, Matrix::ones(states, 1), Matrix::ones(states, 1));
     }
 
     return 0;

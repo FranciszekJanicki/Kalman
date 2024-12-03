@@ -50,14 +50,6 @@ namespace Filter {
         };
     }
 
-    template <Linalg::Arithmetic Filtered>
-    [[nodiscard]] constexpr auto make_kalman(typename Kalman<Filtered>::FilterModel&& filter_model,
-                                             typename Kalman<Filtered>::MeasureModel&& measure_model)
-    {
-        return Kalman<Filtered>{std::forward<typename Kalman<Filtered>::FilterModel>(filter_model),
-                                std::forward<typename Kalman<Filtered>::MeasureModel>(measure_model)};
-    }
-
 }; // namespace Filter
 
 #endif // FILTERS_HPP
