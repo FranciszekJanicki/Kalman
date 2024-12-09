@@ -49,8 +49,13 @@ namespace Filter {
         [[nodiscard]] constexpr Matrix operator()(this Kalman& self, Matrix const& input, Matrix const& measurement)
         {
             self.predict(input);
-            self.update(measurement);
+            self.correct(measurement);
             return self.state_;
+        }
+
+        constexpr void print_state(this Kalman const& self) noexcept
+        {
+            self.state_.print();
         }
 
     private:
@@ -73,7 +78,7 @@ namespace Filter {
             self.state_covariance_ += (self.input_transition_ * self.input_covariance_ * transposed_input_transition);
         }
 
-        constexpr void update(this Kalman& self, Matrix const& measurement)
+        constexpr void correct(this Kalman& self, Matrix const& measurement)
         {
             if (!self.initialized_) {
                 fmt::print("Filter uninitialized!");
@@ -101,7 +106,7 @@ namespace Filter {
 
             /* correct state covariance_ */
             self.state_covariance_ =
-                (Matrix::eye(self.state_transition_.rows()) - kalman_gain * self.measurement_transition_) *
+                (Matrix::make_eye(self.state_transition_.rows()) - kalman_gain * self.measurement_transition_) *
                 self.state_covariance_;
         }
 
@@ -138,7 +143,7 @@ namespace Filter {
         Matrix measurement_transition_{}; // measurements x states
         Matrix measurement_covariance_{}; // measurements x measurements
 
-        Matrix state_{Matrix::zeros(state_transition_.rows(), 1)}; // states x 1
+        Matrix state_{Matrix::make_zeros(state_transition_.rows(), 1)}; // states x 1
     };
 
 }; // namespace Filter

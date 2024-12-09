@@ -50,7 +50,7 @@ namespace Linalg {
     template <Arithmetic Value>
     struct Matrix {
     public:
-        enum struct MatrixError {
+        enum struct Error {
             WRONG_DIMS,
             SINGULARITY,
             BAD_ALLOC,
@@ -60,49 +60,480 @@ namespace Linalg {
         using Size = std::size_t;
         using VectorData = std::vector<Value>;
         using MatrixData = std::vector<std::vector<Value>>;
-        using ExpectedMatrix = std::expected<MatrixData, MatrixError>;
-        using ExpectedVector = std::expected<VectorData, MatrixError>;
-        using ExpectedDet = std::expected<Value, MatrixError>;
-        using Unexpected = std::unexpected<MatrixError>;
+        using ExpectedMatrix = std::expected<Matrix, Error>;
+        using ExpectedDet = std::expected<Value, Error>;
+        using Unexpected = std::unexpected<Error>;
 
-        [[nodiscard]] static constexpr Matrix row(std::initializer_list<Value> const row)
+        [[nodiscard]] static constexpr Matrix
+        make_matrix(std::initializer_list<const std::initializer_list<Value>> const data)
         {
-            return Matrix{make_row(row)};
+            Matrix matrix{};
+            matrix.data_.reserve(data.size());
+            for (auto const& row : data) {
+                auto& column{matrix.data_.emplace_back()};
+                column.reserve(row.size());
+                for (auto const& col : row) {
+                    column.push_back(col);
+                }
+            }
+            return matrix;
         }
 
-        [[nodiscard]] static constexpr Matrix row(Size const rows)
+        [[nodiscard]] static constexpr Matrix make_zeros(Size const rows, Size const columns)
         {
-            return Matrix{make_row(rows)};
+            Matrix matrix{};
+            matrix.data_.reserve(rows);
+            for (Size row{0}; row < rows; ++row) {
+                auto& column{matrix.data_.emplace_back()};
+                column.reserve(columns);
+                for (Size col{0}; col < columns; ++col) {
+                    column.emplace_back();
+                }
+            }
+            return matrix;
         }
 
-        [[nodiscard]] static constexpr Matrix column(std::initializer_list<Value> const column)
+        [[nodiscard]] static constexpr Matrix make_ones(Size const rows, Size const columns)
         {
-            return Matrix{make_column(column)};
+            Matrix matrix{};
+            matrix.data_.reserve(rows);
+            for (Size row{0}; row < rows; ++row) {
+                auto& column{matrix.data_.emplace_back()};
+                column.reserve(columns);
+                for (Size col{0}; col < columns; ++col) {
+                    column.push_back(Value{1});
+                }
+            }
+            return matrix;
         }
 
-        [[nodiscard]] static constexpr Matrix column(Size const columns)
+        [[nodiscard]] static constexpr Matrix make_diagonal(std::initializer_list<Value> const diagonal)
         {
-            return Matrix{make_column(columns)};
+            Matrix matrix{};
+            matrix.data_.reserve(diagonal.size());
+            for (Size row{0}; row < diagonal.size(); ++row) {
+                auto& column{matrix.data_.emplace_back()};
+                column.reserve(diagonal.size());
+                for (Size col{0}; col < diagonal.size(); ++col) {
+                    if (col == row) {
+                        column.push_back(diagonal.begin() + col);
+                    } else {
+                        column.emplace_back();
+                    }
+                }
+            }
+            return matrix;
         }
 
-        [[nodiscard]] static constexpr Matrix diagonal(std::initializer_list<Value> const diagonal)
+        [[nodiscard]] static constexpr Matrix make_eye(Size const dimensions)
         {
-            return Matrix{make_diagonal(diagonal)};
+            Matrix matrix{};
+            matrix.data_.reserve(dimensions);
+            for (Size row{0}; row < dimensions; ++row) {
+                auto& column{matrix.data_.emplace_back()};
+                column.reserve(dimensions);
+                for (Size col{0}; col < dimensions; ++col) {
+                    if (col == row) {
+                        column.push_back(Value{1});
+                    } else {
+                        column.emplace_back();
+                    }
+                }
+            }
+            return matrix;
         }
 
-        [[nodiscard]] static constexpr Matrix eye(Size const dimensions)
+        [[nodiscard]] static constexpr Matrix make_row(Size const rows)
         {
-            return Matrix{make_eye(dimensions)};
+            Matrix matrix{};
+            matrix.data_.reserve(rows);
+            for (Size row{}; row < rows; ++row) {
+                matrix.data_.emplace_back();
+            }
+            return matrix;
         }
 
-        [[nodiscard]] static constexpr Matrix ones(Size const rows, Size const columns)
+        [[nodiscard]] static constexpr Matrix make_row(std::initializer_list<Value> const data)
         {
-            return Matrix{make_ones(rows, columns)};
+            Matrix matrix{};
+            auto const columns{data.size()};
+            matrix.data_.reserve(columns);
+            for (auto const col : data) {
+                matrix.data_.push_back(col);
+            }
+            return matrix;
         }
 
-        [[nodiscard]] static constexpr Matrix zeros(Size const rows, Size const columns)
+        [[nodiscard]] static constexpr Matrix make_column(Size const columns)
         {
-            return Matrix{make_zeros(rows, columns)};
+            Matrix matrix{};
+            auto& column{matrix.emplace_back()};
+            column.reserve(columns);
+            for (Size col{}; col < columns; ++col) {
+                column.emplace_back();
+            }
+            return matrix;
+        }
+
+        [[nodiscard]] static constexpr Matrix make_column(std::initializer_list<Value> const data)
+        {
+            Matrix matrix{};
+            auto& column{matrix.emplace_back()};
+            column.reserve(data.size());
+            for (auto const row : data) {
+                matrix.push_back(row);
+            }
+            return matrix;
+        }
+
+        [[nodiscard]] static constexpr ExpectedMatrix
+        minor(Matrix const& matrix, Size const row, Size const column, Size const dimensions)
+        {
+            Size const rows{matrix.rows()};
+            Size const columns{matrix.columns()};
+            // assert correct dimensions
+            assert(rows == columns);
+            if (rows != columns) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+            // assert cofactor isnt calculated for minor bigger than matrix
+            assert(dimensions <= row && dimensions <= column);
+            if (dimensions > row || dimensions > column) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+            // minor is scalar, can omit later code
+            if (dimensions == 0) {
+                return ExpectedMatrix{matrix};
+            }
+
+            auto minor{make_zeros(dimensions, dimensions)};
+            Size cof_row{0};
+            Size cof_column{0};
+            for (Size row_{0}; row_ < dimensions; ++row_) {
+                for (Size column_{0}; column_ < dimensions; ++column_) {
+                    // copying into cofactor matrixonly those element which are not in given row and column
+                    if (row_ != row && column_ != column) {
+                        minor[cof_row][cof_column++] = matrix[row_][column_];
+
+                        // row is filled, so increase row index and reset column index
+                        if (cof_column == dimensions - 1) {
+                            cof_column = 0;
+                            ++cof_row;
+                        }
+                    }
+                }
+            }
+            return ExpectedMatrix{std::move(minor)};
+        }
+
+        [[nodiscard]] static constexpr ExpectedDet determinant(Matrix const& matrix, Size const dimensions)
+        {
+            Size const rows{matrix.rows()};
+            Size const columns{matrix.columns()};
+            // assert correct dimensions
+            assert(rows == columns);
+            if (rows != columns) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+
+            // assert minor isnt bigger than matrix
+            assert(rows >= dimensions && columns >= dimensions);
+            if (rows < dimensions || columns < dimensions) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+
+            // matrix is scalar, can omit later code
+            if (dimensions == 1) {
+                return ExpectedDet{matrix[0][0]};
+            }
+            // matrix is 2x2 matrix, can omit later code
+            if (dimensions == 2) {
+                return ExpectedDet{(matrix[0][0] * matrix[1][1]) - (matrix[1][0] * matrix[0][1])};
+            }
+
+            auto det{static_cast<Value>(0)};
+
+            // sign multiplier
+            auto sign{static_cast<Value>(1)};
+            auto minor{make_zeros(dimensions, dimensions)};
+            for (Size column{0}; column < dimensions; ++column) {
+                // cofactor of matrix[0][column]
+
+                if (auto result_minor{Matrix::minor(matrix, 0, column, dimensions)}; result_minor.has_value()) {
+                    minor = std::move(result_minor).value();
+                } else {
+                    print(result_minor.error());
+                    std::unreachable();
+                }
+
+                if (auto result_det{Matrix::determinant(minor, dimensions - 1)}; result_det.has_value()) {
+                    det += sign * matrix[0][column] * result_det.value();
+                } else {
+                    print(result_det.error());
+                    std::unreachable();
+                }
+
+                // alternate sign
+                sign *= static_cast<Value>(-1);
+            }
+
+            return ExpectedDet{det};
+        }
+
+        [[nodiscard]] static constexpr Matrix transposition(Matrix const& matrix)
+        {
+            Size const new_rows{matrix.rows()};
+            Size const new_columns{matrix.columns()};
+
+            // matrix is scalar, can omit later code
+            if ((new_rows == new_columns) == 1)
+                return matrix;
+
+            auto transposition{Matrix::make_zeros(new_rows, new_columns)};
+            for (Size row{0}; row < new_rows; ++row) {
+                for (Size column{0}; column < new_columns; ++column) {
+                    transposition[row][column] = matrix[column][row];
+                }
+            }
+            return transposition;
+        }
+
+        [[nodiscard]] static constexpr ExpectedMatrix adjoint(Matrix const& matrix)
+        {
+            Size const rows{matrix.rows()};
+            Size const columns{matrix.columns()};
+            // assert correct dimensions
+            assert(rows == columns);
+            if (rows != columns) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+
+            // matrixsquare
+            Size const dimensions{rows};
+            // matrix is scalar, can omit later code
+            if (dimensions == 1) {
+                return ExpectedMatrix{matrix};
+            }
+
+            auto complement{Matrix::make_zeros(dimensions, dimensions)};
+
+            // sign multiplier
+            auto sign{static_cast<Value>(1)};
+            auto minor{make_zeros(dimensions, dimensions)};
+            for (Size row{0}; row < dimensions; ++row) {
+                for (Size column{0}; column < dimensions; column++) {
+                    // get cofactor of matrix[row][column]
+
+                    if (auto result_minor{Matrix::minor(matrix, row, column, dimensions)}; result_minor.has_value()) {
+                        minor = std::move(result_minor).value();
+                    } else {
+                        print(result_minor.error());
+                        std::unreachable();
+                    }
+
+                    // sign of adj[column][row] positive if sum of row and column indexes is even
+                    if ((row + column) % 2 == 0) {
+                        sign = static_cast<Value>(1);
+                    } else {
+                        sign = static_cast<Value>(-1);
+                    }
+
+                    // complement is matrixof determinants of minors with alternating signs!!!
+                    if (auto result_det{determinant(minor, dimensions - 1)}; result_det.has_value()) {
+                        complement[row][column] = sign * result_det.value();
+                    } else {
+                        print(result_det.error());
+                        std::unreachable();
+                    }
+                }
+            }
+
+            // adjoSize is transposed of complement matrix
+            return ExpectedMatrix{Matrix::transposition(complement)};
+        }
+
+        [[nodiscard]] static constexpr ExpectedMatrix inverse(Matrix const& matrix)
+        {
+            Size const rows{matrix.rows()};
+            Size const columns{matrix.columns()};
+            // assert correct dimensions
+            assert(rows == columns);
+            if (rows != columns) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+
+            // matrixsquare
+            Size const dimensions{rows};
+            // matrix is scalar, can omit later code
+            if (dimensions == 1) {
+                return ExpectedMatrix{matrix};
+            }
+
+            if (auto result_det{Matrix::determinant(matrix, dimensions)}; result_det.has_value()) {
+                auto const det{std::move(result_det).value()};
+
+                // assert correct determinant
+                assert(det != 0);
+                if (det == 0) {
+                    return Unexpected{Error::SINGULARITY};
+                }
+
+                if (auto result_adjoint{Matrix::adjoint(matrix)}; result_adjoint.has_value()) {
+                    auto const adjoint{std::move(result_adjoint).value()};
+
+                    // inverse is adjoint matrixdivided by det factor
+                    // division is multiplication by inverse
+                    return ExpectedMatrix{Matrix::scale(adjoint, 1 / det)};
+                } else {
+                    print(result_adjoint.error());
+                    std::unreachable();
+                }
+            } else {
+                print(result_det.error());
+                std::unreachable();
+            }
+        }
+
+        [[nodiscard]] static constexpr ExpectedMatrix upper_triangular(Matrix const& matrix)
+        {
+            Size const rows{matrix.rows()};
+            Size const columns{matrix.columns()};
+            // assert correct dimensions
+            assert(rows == columns);
+            if (rows != columns) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+
+            // matrixsquare
+            Size const dimensions{rows};
+            // matrix is scalar
+            if (dimensions == 1)
+                return ExpectedMatrix{matrix};
+
+            // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
+            return ExpectedMatrix{Matrix::transposition(Matrix::lower_triangular(matrix))};
+        }
+
+        [[nodiscard]] static constexpr ExpectedMatrix lower_triangular(Matrix const& matrix)
+        {
+            Size const rows{matrix.rows()};
+            Size const columns{matrix.columns()};
+            // assert correct dimensions
+            assert(rows == columns);
+            if (rows != columns) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+
+            // matrixsquare
+            Size const dimensions = rows; // = columns;
+            // matrix is scalar
+            if (dimensions == 1) {
+                return ExpectedMatrix{matrix};
+            }
+
+            auto lower_triangular{Matrix::make_zeros(dimensions, dimensions)};
+
+            // decomposing matrix matrixinto lower triangular
+            for (Size row{0}; row < dimensions; ++row) {
+                for (Size column{0}; column <= row; ++column) {
+                    Value sum{};
+
+                    // summation for diagonals
+                    if (column == row) {
+                        for (Size sum_col{0}; sum_col < column; ++sum_col) {
+                            sum += std::pow(lower_triangular[column][sum_col], 2);
+                        }
+                        lower_triangular[column][column] = std::sqrt(matrix[column][column] - sum);
+                    } else {
+                        // evaluating L(row, column) using L(column, column)
+                        for (Size sum_col{0}; sum_col < column; ++sum_col) {
+                            sum += (lower_triangular[row][sum_col] * lower_triangular[column][sum_col]);
+                        }
+                        lower_triangular[row][column] = (matrix[row][column] - sum) / lower_triangular[column][column];
+                    }
+                }
+            }
+            return ExpectedMatrix{std::move(lower_triangular)};
+        }
+
+        [[nodiscard]] static constexpr ExpectedMatrix product(Matrix const& left, Matrix const& right)
+        {
+            Size const left_rows{left.rows()};
+            Size const right_rows{right.rows()};
+            Size const left_columns = {left.columns()};
+            Size const right_columns{right.columns()};
+
+            // assert correct dimensions
+            assert(left_columns == right_rows);
+            if (left_columns != right_rows) {
+                return Unexpected{Error::WRONG_DIMS};
+            }
+
+            Size const product_rows{left_rows};
+            Size const product_columns{right_columns};
+            auto product{Matrix::make_zeros(product_rows, product_columns)};
+
+            for (Size left_row{0}; left_row < left_rows; ++left_row) {
+                for (Size right_column{0}; right_column < right_columns; ++right_column) {
+                    Value sum{0};
+                    for (Size left_column{0}; left_column < left_columns; ++left_column) {
+                        sum += left[left_row][left_column] * right[left_column][right_column];
+                    }
+                    product[left_row][right_column] = sum;
+                }
+            }
+            return ExpectedMatrix{std::move(product)};
+        }
+
+        [[nodiscard]] static constexpr Matrix sum(Matrix const& left, Matrix const& right) noexcept
+        {
+            assert(left.rows() == right.rows());
+            assert(left.columns() == right.columns());
+
+            auto sum{Matrix::make_zeros(left.rows(), left.columns())};
+            for (Size row{0}; row < left.rows(); ++row) {
+                for (Size column{0}; column < left.columns(); ++column) {
+                    sum[row][column] = left[row][column] + right[row][column];
+                }
+            }
+            return sum;
+        }
+
+        [[nodiscard]] static constexpr Matrix difference(Matrix const& left, Matrix const& right) noexcept
+        {
+            assert(left.rows() == right.rows());
+            assert(left.columns() == right.columns());
+
+            auto difference{Matrix::make_zeros(left.rows(), left.columns())};
+            for (Size row{0}; row < left.rows(); ++row) {
+                for (Size column{0}; column < left.columns(); ++column) {
+                    difference[row][column] = left[row][column] - right[row][column];
+                }
+            }
+            return difference;
+        }
+
+        [[nodiscard]] static constexpr Matrix scale(Matrix const& matrix, Value const factor)
+        {
+            Size const rows{matrix.rows()};
+            Size const columns{matrix.columns()};
+
+            // factor is 1 then dont need to do anything
+            if (factor == 1) {
+                return matrix;
+            }
+            // factor is 0 then return matrixof zeros
+            else if (factor == 0) {
+                return Matrix::make_zeros(matrix.rows(), matrix.columns());
+            }
+
+            auto scale{Matrix::make_zeros(rows, columns)};
+            for (Size row{0}; row < rows; ++row) {
+                for (Size column{0}; column < columns; ++column) {
+                    scale[row][column] = matrix[row][column] * factor;
+                }
+            }
+            return scale;
         }
 
         constexpr Matrix() noexcept = default;
@@ -147,7 +578,7 @@ namespace Linalg {
 
             for (Size row{0}; row < self.rows(); ++row) {
                 for (Size column{0}; column < self.columns(); ++column) {
-                    self.data_[row][column] += other.data_[row][column];
+                    self[row][column] += other[row][column];
                 }
             }
             return self;
@@ -161,7 +592,7 @@ namespace Linalg {
 
             for (Size row{0}; row < self.rows(); ++row) {
                 for (Size column{0}; column < self.columns(); ++column) {
-                    self.data_[row][column] -= other.data_[row][column];
+                    self[row][column] -= other[row][column];
                 }
             }
             return self;
@@ -174,7 +605,7 @@ namespace Linalg {
                 return self;
             }
 
-            self.data_ = scale(self.data_, factor);
+            self = scale(self, factor);
             return self;
         }
 
@@ -183,11 +614,11 @@ namespace Linalg {
             // assert correct dimensions
             assert(self.columns() == other.rows());
 
-            if (auto expected_product{Matrix::product(self.data_, other.data_)}; expected_product.has_value()) {
-                self.data_ = std::move(expected_product).value();
+            if (auto product{Matrix::product(self, other)}; product.has_value()) {
+                self = std::move(product).value();
                 return self;
             } else {
-                print_error(expected_product.error());
+                print(product.error());
                 std::unreachable();
             }
         }
@@ -203,7 +634,7 @@ namespace Linalg {
             }
 
             // division is multiplication by inverse
-            self.data_ = scale(self.data_, 1 / factor);
+            self = scale(self, 1 / factor);
             return self;
         }
 
@@ -213,17 +644,16 @@ namespace Linalg {
             assert(self.columns() == other.rows());
 
             // division is multiplication by inverse
-            if (auto expected_inverse{inverse(other.data_)}; expected_inverse.has_value()) {
-                if (auto expected_product{product(self.data_, expected_inverse.value())};
-                    expected_product.has_value()) {
-                    self = std::move(expected_product).value();
+            if (auto inverse{Matrix::inverse(other)}; inverse.has_value()) {
+                if (auto product{Matrix::product(self, inverse.value())}; product.has_value()) {
+                    self = std::move(product).value();
                     return self;
                 } else {
-                    print_error(expected_product.error());
+                    print(product.error());
                     std::unreachable();
                 }
             } else {
-                print_error(expected_inverse.error());
+                print(inverse.error());
                 std::unreachable();
             }
         }
@@ -232,7 +662,7 @@ namespace Linalg {
         {
             assert(self.is_square());
             for (Value i{}; i < factor - 1; ++i) {
-                self.data_ *= self.data_;
+                self *= self;
             }
             return self;
         }
@@ -243,7 +673,7 @@ namespace Linalg {
             assert(left.rows() == right.rows());
             assert(left.columns() == right.columns());
 
-            return Matrix{sum(left.data_, right.data_)};
+            return Matrix::sum(left, right);
         }
 
         friend constexpr Matrix operator-(Matrix const& left, Matrix const& right)
@@ -252,7 +682,7 @@ namespace Linalg {
             assert(left.rows() == right.rows());
             assert(left.columns() == right.columns());
 
-            return Matrix{difference(left.data_, right.data_)};
+            return Matrix::difference(left, right);
         }
 
         friend constexpr Matrix operator*(Value const& factor, Matrix const& matrix)
@@ -262,7 +692,7 @@ namespace Linalg {
                 return matrix;
             }
 
-            return Matrix{scale(matrix.data_, factor)};
+            return Matrix::scale(matrix, factor);
         }
 
         friend constexpr Matrix operator*(Matrix const& matrix, Value const& factor)
@@ -272,7 +702,7 @@ namespace Linalg {
                 return matrix;
             }
 
-            return Matrix{scale(matrix.data_, factor)};
+            return Matrix::scale(matrix, factor);
         }
 
         friend constexpr Matrix operator*(Matrix const& left, Matrix const& right)
@@ -280,10 +710,12 @@ namespace Linalg {
             // assert correct dimensions
             assert(left.columns() == right.rows());
 
-            if (auto expected_product{product(left.data_, right.data_)}; expected_product.has_value()) {
-                return Matrix{std::move(expected_product).value()};
+            if (auto product{Matrix::product(left, right)}; product.has_value()) {
+                // i wouldnt get RVO anyway, sinve .value() isnt a local identifier, its a part of a local identifier,
+                // product is a local identifier, but im retutning its value
+                return std::move(product).value();
             } else {
-                print_error(expected_product.error());
+                print(product.error());
                 std::unreachable();
             }
         }
@@ -299,7 +731,7 @@ namespace Linalg {
             }
 
             // division is multiplication by inverse
-            return Matrix{scale(matrix.data_, 1 / factor)};
+            return Matrix::scale(matrix, 1 / factor);
         }
 
         friend constexpr Matrix operator/(Matrix const& left, Matrix const& right)
@@ -308,15 +740,15 @@ namespace Linalg {
             assert(left.columns() == right.rows());
 
             // division is multiplication by inverse
-            if (auto expected_inverse{inverse(right)}; expected_inverse.has_value()) {
-                if (auto expected_product{product(left, expected_inverse.value())}; expected_product.has_value()) {
-                    return Matrix{std::move(expected_product).value()};
+            if (auto inverse{Matrix::inverse(right)}; inverse.has_value()) {
+                if (auto product{Matrix::product(left, inverse.value())}; product.has_value()) {
+                    return std::move(product).value();
                 } else {
-                    print_error(expected_product.error());
+                    print(product.error());
                     std::unreachable();
                 }
             } else {
-                print_error(expected_inverse.error());
+                print(inverse.error());
                 std::unreachable();
             }
         }
@@ -324,9 +756,9 @@ namespace Linalg {
         friend constexpr Matrix operator^(Matrix const& matrix, Value const& factor)
         {
             assert(matrix.is_square());
-            auto result{matrix.data_};
+            Matrix result{matrix};
             for (Value i{}; i < factor - 1; ++i) {
-                result *= matrix.data_;
+                result *= matrix;
             }
             return result;
         }
@@ -372,7 +804,26 @@ namespace Linalg {
 
         constexpr void print(this Matrix const& self) noexcept
         {
-            Matrix::print(self.data_);
+            fmt::print("[");
+            for (auto& row : self.data_) {
+                fmt::print("[");
+                for (auto& col : row) {
+                    if constexpr (std::is_integral_v<Value>) {
+                        fmt::print("%d", static_cast<int>(col));
+                    } else if constexpr (std::is_floating_point_v<Value>) {
+                        fmt::print("%f", static_cast<float>(col));
+                    }
+
+                    if (col != row.back()) {
+                        fmt::print(", ");
+                    }
+                }
+                fmt::print("]");
+                if (row != self.data_.back()) {
+                    fmt::print(",\n");
+                }
+            }
+            fmt::print("]\n");
         }
 
         [[nodiscard]] constexpr MatrixData const& data(this Matrix const& self) noexcept
@@ -395,7 +846,7 @@ namespace Linalg {
             self.data_ = data;
         }
 
-        constexpr void swap(this Matrix& self, MatrixData& other)
+        constexpr void swap(this Matrix& self, Matrix& other)
         {
             std::swap(self.data_, other.data_);
         }
@@ -511,7 +962,7 @@ namespace Linalg {
 
         [[nodiscard]] constexpr Size columns(this Matrix const& self) noexcept
         {
-            return self.data_[0].size();
+            return self.data_.front().size();
         }
 
         constexpr VectorData diagonal(this Matrix const& self)
@@ -522,550 +973,48 @@ namespace Linalg {
             diagonale.reserve(self.rows());
 
             for (Size diag{0}; diag < self.rows(); ++diag) {
-                diagonale.push_back(self.data_[diag][diag]);
+                diagonale.push_back(self[diag][diag]);
             }
             return diagonale;
         }
 
         constexpr void transpose(this Matrix& self)
         {
-            self.data_ = transposition(self.data_);
+            self = transposition(self);
         }
 
         constexpr void invert(this Matrix& self)
         {
-            if (auto expected_inverse{Matrix::inverse(self.data_)}; expected_inverse.has_value()) {
-                self.data_ = std::move(expected_inverse).value();
+            if (auto inverse{Matrix::inverse(self)}; inverse.has_value()) {
+                self = std::move(inverse).value();
             } else {
-                print_error(expected_inverse.error());
+                print(inverse.error());
                 std::unreachable();
             }
         }
 
     private:
-        static constexpr const char* matrix_error_to_string(MatrixError const MatrixError) noexcept
+        static constexpr const char* error_to_string(Error const Error) noexcept
         {
-            switch (MatrixError) {
-                case MatrixError::WRONG_DIMS:
+            switch (Error) {
+                case Error::WRONG_DIMS:
                     return "Wrong dims";
-                case MatrixError::SINGULARITY:
+                case Error::SINGULARITY:
                     return "Singularity";
-                case MatrixError::BAD_ALLOC:
+                case Error::BAD_ALLOC:
                     return "Bad alloc";
                 default:
                     return "None";
             }
         }
 
-        static constexpr void print_error(MatrixError const MatrixError) noexcept
+        static constexpr void print(Error const Error) noexcept
         {
-            fmt::print("%s", matrix_error_to_string(MatrixError));
-        }
-
-        static constexpr void print(MatrixData const& data) noexcept
-        {
-            fmt::print("[");
-
-            auto row{data.cbegin()};
-            while (row != data.cend()) {
-                fmt::print("[");
-                auto col{std::cbegin(*row)};
-                while (col != std::cend(*row)) {
-                    if constexpr (std::is_integral_v<Value>) {
-                        fmt::print("%ld", static_cast<long int>(*col));
-                    } else if constexpr (std::is_floating_point_v<Value>) {
-                        fmt::print("%Lf", static_cast<long double>(*col));
-                    }
-                    if (col != std::cend(*row)) {
-                        fmt::print(", ");
-                    }
-                    std::advance(col, 1);
-                }
-                fmt::print("]");
-                if (std::next(row) != data.cend()) {
-                    fmt::print(",\n");
-                }
-                std::advance(row, 1);
-            }
-
-            fmt::print("]\n");
-        }
-
-        static constexpr MatrixData make_matrix(std::initializer_list<const std::initializer_list<Value>> const data)
-        {
-            MatrixData matrix{};
-            matrix.reserve(data.size());
-            for (auto const& row : data) {
-                auto& column{matrix.emplace_back()};
-                column.reserve(row.size());
-                for (auto const& col : row) {
-                    column.push_back(col);
-                }
-            }
-            return matrix;
-        }
-
-        static constexpr MatrixData make_zeros(Size const rows, Size const columns)
-        {
-            MatrixData matrix{};
-            matrix.reserve(rows);
-            for (Size row{0}; row < rows; ++row) {
-                auto& column{matrix.emplace_back()};
-                column.reserve(columns);
-                for (Size col{0}; col < columns; ++col) {
-                    column.emplace_back();
-                }
-            }
-            return matrix;
-        }
-
-        static constexpr MatrixData make_ones(Size const rows, Size const columns)
-        {
-            MatrixData matrix{};
-            matrix.reserve(rows);
-            for (Size row{0}; row < rows; ++row) {
-                auto& column{matrix.emplace_back()};
-                column.reserve(columns);
-                for (Size col{0}; col < columns; ++col) {
-                    column.push_back(Value{1});
-                }
-            }
-            return matrix;
-        }
-
-        static constexpr MatrixData make_diagonal(std::initializer_list<Value> const diagonal)
-        {
-            MatrixData matrix{};
-            matrix.reserve(diagonal.size());
-            for (Size row{0}; row < diagonal.size(); ++row) {
-                auto& column{matrix.emplace_back()};
-                column.reserve(diagonal.size());
-                for (Size col{0}; col < diagonal.size(); ++col) {
-                    if (col == row) {
-                        column.push_back(*std::next(diagonal.begin(), col));
-                    } else {
-                        column.emplace_back();
-                    }
-                }
-            }
-            return matrix;
-        }
-
-        static constexpr MatrixData make_eye(Size const dimensions)
-        {
-            MatrixData matrix{};
-            matrix.reserve(dimensions);
-            for (Size row{0}; row < dimensions; ++row) {
-                auto& column{matrix.emplace_back()};
-                column.reserve(dimensions);
-                for (Size col{0}; col < dimensions; ++col) {
-                    if (col == row) {
-                        column.push_back(Value{1});
-                    } else {
-                        column.emplace_back();
-                    }
-                }
-            }
-            return matrix;
-        }
-
-        static constexpr MatrixData make_row(Size const rows)
-        {
-            VectorData row_vector{};
-            row_vector.reserve(rows);
-            for (Size row{}; row < rows; ++row) {
-                row_vector.emplace_back();
-            }
-            return row_vector;
-        }
-        static constexpr MatrixData make_row(std::initializer_list<Value> const data)
-        {
-            VectorData row_vector{};
-            auto const columns{data.size()};
-            row_vector.reserve(columns);
-            auto make_column{[column{data.begin()}]() -> decltype(auto) { return *(column)++; }};
-            for (Size row{}; row < data.size(); ++row) {
-                row_vector.push_back(make_column());
-            }
-            return row_vector;
-        }
-
-        static constexpr MatrixData make_column(Size const columns)
-        {
-            MatrixData column_vector{};
-            auto& column{column_vector.emplace_back()};
-            column.reserve(columns);
-            for (Size col{}; col < columns; ++col) {
-                column.emplace_back();
-            }
-            return column_vector;
-        }
-
-        static constexpr MatrixData make_column(std::initializer_list<Value> const data)
-        {
-            MatrixData column_vector{};
-            auto& column{column_vector.emplace_back()};
-            column.reserve(data.size());
-            auto make_row{[row{data.begin()}]() -> decltype(auto) { return *(row)++; }};
-            for (Size row{}; row < data.size(); ++row) {
-                column_vector.push_back(make_row());
-            }
-            return column_vector;
-        }
-
-        static constexpr ExpectedMatrix
-        minor(MatrixData const& data, Size const row, Size const column, Size const dimensions)
-        {
-            Size const rows{data.size()};
-            Size const columns{data[0].size()};
-            // assert correct dimensions
-            assert(rows == columns);
-            if (rows != columns) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-            // assert cofactor isnt calculated for minor bigger than data
-            assert(dimensions <= row && dimensions <= column);
-            if (dimensions > row || dimensions > column) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-            // minor is scalar, can omit later code
-            if (dimensions == 0) {
-                return ExpectedMatrix{data};
-            }
-
-            auto minor{make_zeros(dimensions, dimensions)};
-            Size cof_row{0};
-            Size cof_column{0};
-            for (Size row_{0}; row_ < dimensions; ++row_) {
-                for (Size column_{0}; column_ < dimensions; ++column_) {
-                    // copying into cofactor matrixonly those element which are not in given row and column
-                    if (row_ != row && column_ != column) {
-                        minor[cof_row][cof_column++] = data[row_][column_];
-
-                        // row is filled, so increase row index and reset column index
-                        if (cof_column == dimensions - 1) {
-                            cof_column = 0;
-                            ++cof_row;
-                        }
-                    }
-                }
-            }
-            return ExpectedMatrix{std::move(minor)};
-        }
-
-        static constexpr ExpectedDet determinant(MatrixData const& data, Size const dimensions)
-        {
-            Size const rows{data.size()};
-            Size const columns{data[0].size()};
-            // assert correct dimensions
-            assert(rows == columns);
-            if (rows != columns) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-
-            // assert minor isnt bigger than data
-            assert(rows >= dimensions && columns >= dimensions);
-            if (rows < dimensions || columns < dimensions) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-
-            // data is scalar, can omit later code
-            if (dimensions == 1) {
-                return ExpectedDet{data[0][0]};
-            }
-            // data is 2x2 matrix, can omit later code
-            if (dimensions == 2) {
-                return ExpectedDet{std::in_place, (data[0][0] * data[1][1]) - (data[1][0] * data[0][1])};
-            }
-
-            auto det{static_cast<Value>(0)};
-
-            // sign multiplier
-            auto sign{static_cast<Value>(1)};
-            auto minor{make_zeros(dimensions, dimensions)};
-            for (Size column{0}; column < dimensions; ++column) {
-                // cofactor of data[0][column]
-
-                if (auto expected_minor{Matrix::minor(data, 0, column, dimensions)}; expected_minor.has_value()) {
-                    minor = std::move(expected_minor).value();
-                } else {
-                    print_error(expected_minor.error());
-                    std::unreachable();
-                }
-
-                if (auto expected_det{determinant(minor, dimensions - 1)}; expected_det.has_value()) {
-                    det += sign * data[0][column] * std::move(expected_det).value();
-                } else {
-                    print_error(expected_det.error());
-                    std::unreachable();
-                }
-
-                // alternate sign
-                sign *= static_cast<Value>(-1);
-            }
-
-            return ExpectedDet{det};
-        }
-
-        static constexpr MatrixData transposition(MatrixData const& data)
-        {
-            Size const new_rows{data.size()};
-            Size const new_columns{data[0].size()};
-
-            // data is scalar, can omit later code
-            if ((new_rows == new_columns) == 1)
-                return data;
-
-            auto transposition{make_zeros(new_rows, new_columns)};
-            for (Size row{0}; row < new_rows; ++row) {
-                for (Size column{0}; column < new_columns; ++column) {
-                    transposition[row][column] = data[column][row];
-                }
-            }
-            return transposition;
-        }
-
-        static constexpr ExpectedMatrix adjoint(MatrixData const& data)
-        {
-            Size const rows{data.size()};
-            Size const columns{data[0].size()};
-            // assert correct dimensions
-            assert(rows == columns);
-            if (rows != columns) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-
-            // matrixsquare
-            Size const dimensions{rows};
-            // data is scalar, can omit later code
-            if (dimensions == 1) {
-                return ExpectedMatrix{data};
-            }
-
-            auto complement{make_zeros(dimensions, dimensions)};
-
-            // sign multiplier
-            auto sign{static_cast<Value>(1)};
-            auto minor{make_zeros(dimensions, dimensions)};
-            for (Size row{0}; row < dimensions; ++row) {
-                for (Size column{0}; column < dimensions; column++) {
-                    // get cofactor of data[row][column]
-
-                    if (auto expected_minor{Matrix::minor(data, row, column, dimensions)}; expected_minor.has_value()) {
-                        minor = std::move(expected_minor).value();
-                    } else {
-                        print_error(expected_minor.error());
-                        std::unreachable();
-                    }
-
-                    // sign of adj[column][row] positive if sum of row and column indexes is even
-                    if ((row + column) % 2 == 0) {
-                        sign = static_cast<Value>(1);
-                    } else {
-                        sign = static_cast<Value>(-1);
-                    }
-
-                    // complement is matrixof determinants of minors with alternating signs!!!
-                    if (auto expected_det{determinant(minor, dimensions - 1)}; expected_det.has_value()) {
-                        complement[row][column] = (sign)*std::move(expected_det).value();
-                    } else {
-                        print_error(expected_det.error());
-                        std::unreachable();
-                    }
-                }
-            }
-
-            // adjoSize is transposed of complement matrix
-            return ExpectedMatrix{transposition(complement)};
-        }
-
-        static constexpr ExpectedMatrix inverse(MatrixData const& data)
-        {
-            Size const rows{data.size()};
-            Size const columns{data[0].size()};
-            // assert correct dimensions
-            assert(rows == columns);
-            if (rows != columns) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-
-            // matrixsquare
-            Size const dimensions{rows};
-            // data is scalar, can omit later code
-            if (dimensions == 1) {
-                return ExpectedMatrix{data};
-            }
-
-            if (auto expected_det{determinant(data, dimensions)}; expected_det.has_value()) {
-                auto const det{std::move(expected_det).value()};
-
-                // assert correct determinant
-                assert(det != 0);
-                if (det == 0) {
-                    return Unexpected{MatrixError::SINGULARITY};
-                }
-
-                if (auto expected_adjoint{adjoint(data)}; expected_adjoint.has_value()) {
-                    auto const adjoint{std::move(expected_adjoint).value()};
-
-                    // inverse is adjoint matrixdivided by det factor
-                    // division is multiplication by inverse
-                    return ExpectedMatrix{scale(adjoint, 1 / det)};
-                } else {
-                    print_error(expected_adjoint.error());
-                    std::unreachable();
-                }
-            } else {
-                print_error(expected_det.error());
-                std::unreachable();
-            }
-        }
-
-        static constexpr ExpectedMatrix upper_triangular(MatrixData const& data)
-        {
-            Size const rows{data.size()};
-            Size const columns{data[0].size()};
-            // assert correct dimensions
-            assert(rows == columns);
-            if (rows != columns) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-
-            // matrixsquare
-            Size const dimensions{rows};
-            // data is scalar
-            if (dimensions == 1)
-                return ExpectedMatrix{data};
-
-            // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
-            return ExpectedMatrix{transposition(lower_triangular(data))};
-        }
-
-        static constexpr ExpectedMatrix lower_triangular(MatrixData const& data)
-        {
-            Size const rows{data.size()};
-            Size const columns{data[0].size()};
-            // assert correct dimensions
-            assert(rows == columns);
-            if (rows != columns) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-
-            // matrixsquare
-            Size const dimensions = rows; // = columns;
-            // data is scalar
-            if (dimensions == 1) {
-                return ExpectedMatrix{data};
-            }
-
-            auto lower_triangular{make_zeros(dimensions, dimensions)};
-
-            // decomposing data matrixinto lower triangular
-            for (Size row{0}; row < dimensions; ++row) {
-                for (Size column{0}; column <= row; ++column) {
-                    Value sum{};
-
-                    // summation for diagonals
-                    if (column == row) {
-                        for (Size sum_col{0}; sum_col < column; ++sum_col) {
-                            sum += std::pow(lower_triangular[column][sum_col], 2);
-                        }
-                        lower_triangular[column][column] = std::sqrt(data[column][column] - sum);
-                    } else {
-                        // evaluating L(row, column) using L(column, column)
-                        for (Size sum_col{0}; sum_col < column; ++sum_col) {
-                            sum += (lower_triangular[row][sum_col] * lower_triangular[column][sum_col]);
-                        }
-                        lower_triangular[row][column] = (data[row][column] - sum) / lower_triangular[column][column];
-                    }
-                }
-            }
-            return ExpectedMatrix{std::move(lower_triangular)};
-        }
-
-        static constexpr ExpectedMatrix product(MatrixData const& left, MatrixData const& right)
-        {
-            Size const left_rows{left.size()};
-            Size const right_rows{right.size()};
-            Size const left_columns = {left[0].size()};
-            Size const right_columns{right[0].size()};
-
-            // assert correct dimensions
-            assert(left_columns == right_rows);
-            if (left_columns != right_rows) {
-                return Unexpected{MatrixError::WRONG_DIMS};
-            }
-
-            Size const product_rows{left_rows};
-            Size const product_columns{right_columns};
-            auto product{make_zeros(product_rows, product_columns)};
-
-            for (Size left_row{0}; left_row < left_rows; ++left_row) {
-                for (Size right_column{0}; right_column < right_columns; ++right_column) {
-                    Value sum{0};
-                    for (Size left_column{0}; left_column < left_columns; ++left_column) {
-                        sum += left[left_row][left_column] * right[left_column][right_column];
-                    }
-                    product[left_row][right_column] = sum;
-                }
-            }
-            return ExpectedMatrix{std::move(product)};
-        }
-
-        static constexpr MatrixData sum(MatrixData const& left, MatrixData const& right) noexcept
-        {
-            assert(left.size() == right.size());
-            assert(left[0].size() == right[0].size());
-
-            auto sum{make_zeros(left.size(), right.size())};
-            for (Size row{0}; row < left.size(); ++row) {
-                for (Size column{0}; column < left[0].size(); ++column) {
-                    sum[row][column] = left[row][column] + right[row][column];
-                }
-            }
-            return sum;
-        }
-
-        static constexpr MatrixData difference(MatrixData const& left, MatrixData const& right) noexcept
-        {
-            assert(left.size() == right.size());
-            assert(left[0].size() == right[0].size());
-
-            auto difference{make_zeros(left.size(), right.size())};
-            for (Size row{0}; row < left.size(); ++row) {
-                for (Size column{0}; column < left[0].size(); ++column) {
-                    difference[row][column] = left[row][column] - right[row][column];
-                }
-            }
-            return difference;
-        }
-
-        static constexpr MatrixData scale(MatrixData const& data, Value const factor)
-        {
-            Size const rows{data.size()};
-            Size const columns{data[0].size()};
-
-            // factor is 1 then dont need to do anything
-            if (factor == 1) {
-                return data;
-            }
-            // factor is 0 then return matrixof zeros
-            else if (factor == 0) {
-                return make_zeros(data.size(), data[0].size());
-            }
-
-            auto scale{make_zeros(rows, columns)};
-            for (Size row{0}; row < rows; ++row) {
-                for (Size column{0}; column < columns; ++column) {
-                    scale[row][column] = data[row][column] * factor;
-                }
-            }
-            return scale;
+            fmt::print("%s", error_to_string(Error));
         }
 
         MatrixData data_{};
     };
-
 }; // namespace Linalg
 
 #endif // MATRIX_HPP
