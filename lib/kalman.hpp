@@ -70,12 +70,10 @@ namespace Filter {
             self.state_ = (self.state_transition_ * self.state_) + (self.input_transition_ * input);
 
             /* predict covariance_ */
-            auto transposed_state_transition{self.state_transition_};
-            transposed_state_transition.transpose();
-            self.state_covariance_ = (self.state_transition_ * self.state_covariance_ * transposed_state_transition);
-            auto transposed_input_transition{self.state_transition_};
-            transposed_input_transition.transpose();
-            self.state_covariance_ += (self.input_transition_ * self.input_covariance_ * transposed_input_transition);
+            self.state_covariance_ =
+                (self.state_transition_ * self.state_covariance_ * Matrix::transposition(self.state_transition_));
+            self.state_covariance_ +=
+                (self.input_transition_ * self.input_covariance_ * Matrix::transposition(self.input_transition_));
         }
 
         constexpr void correct(this Kalman& self, Matrix const& measurement)
@@ -89,17 +87,13 @@ namespace Filter {
             auto const innovation{measurement - (self.measurement_transition_ * self.state_)};
 
             /* calculate residual covariance_ */
-            auto transposed_measurement_transition{self.measurement_transition_};
-            transposed_measurement_transition.transpose();
-            auto const residual_covariance{
-                (self.measurement_transition_ * self.state_covariance_ * transposed_measurement_transition) +
-                self.measurement_covariance_};
+            auto const residual_covariance{(self.measurement_transition_ * self.state_covariance_ *
+                                            Matrix::transposition(self.measurement_transition_)) +
+                                           self.measurement_covariance_};
 
             /* calculate kalman gain */
-            auto inverted_residual_covariance{residual_covariance};
-            inverted_residual_covariance.invert();
-            auto const kalman_gain{
-                ((self.state_covariance_ * transposed_measurement_transition) * inverted_residual_covariance)};
+            auto const kalman_gain{(self.state_covariance_ * Matrix::transposition(self.measurement_transition_)) *
+                                   Matrix::transposition(residual_covariance)};
 
             /* correct state prediction_ */
             self.state_ *= (kalman_gain * innovation);
