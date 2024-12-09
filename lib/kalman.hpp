@@ -71,9 +71,9 @@ namespace Filter {
 
             /* predict covariance_ */
             self.state_covariance_ =
-                (self.state_transition_ * self.state_covariance_ * Matrix::transposition(self.state_transition_));
+                (self.state_transition_ * self.state_covariance_ * Matrix::transpose(self.state_transition_));
             self.state_covariance_ +=
-                (self.input_transition_ * self.input_covariance_ * Matrix::transposition(self.input_transition_));
+                (self.input_transition_ * self.input_covariance_ * Matrix::transpose(self.input_transition_));
         }
 
         constexpr void correct(this Kalman& self, Matrix const& measurement)
@@ -88,12 +88,12 @@ namespace Filter {
 
             /* calculate residual covariance_ */
             auto const residual_covariance{(self.measurement_transition_ * self.state_covariance_ *
-                                            Matrix::transposition(self.measurement_transition_)) +
+                                            Matrix::transpose(self.measurement_transition_)) +
                                            self.measurement_covariance_};
 
             /* calculate kalman gain */
-            auto const kalman_gain{(self.state_covariance_ * Matrix::transposition(self.measurement_transition_)) *
-                                   Matrix::transposition(residual_covariance)};
+            auto const kalman_gain{(self.state_covariance_ * Matrix::transpose(self.measurement_transition_)) *
+                                   Matrix::inverse(residual_covariance).value()};
 
             /* correct state prediction_ */
             self.state_ *= (kalman_gain * innovation);

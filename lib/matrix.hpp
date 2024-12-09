@@ -280,7 +280,7 @@ namespace Linalg {
             return ExpectedDet{det};
         }
 
-        [[nodiscard]] static constexpr Matrix transposition(Matrix const& matrix)
+        [[nodiscard]] static constexpr Matrix transpose(Matrix const& matrix)
         {
             Size const new_rows{matrix.rows()};
             Size const new_columns{matrix.columns()};
@@ -289,13 +289,13 @@ namespace Linalg {
             if ((new_rows == new_columns) == 1)
                 return matrix;
 
-            auto transposition{Matrix::make_zeros(new_rows, new_columns)};
+            auto transpose{Matrix::make_zeros(new_rows, new_columns)};
             for (Size row{0}; row < new_rows; ++row) {
                 for (Size column{0}; column < new_columns; ++column) {
-                    transposition[row][column] = matrix[column][row];
+                    transpose[row][column] = matrix[column][row];
                 }
             }
-            return transposition;
+            return transpose;
         }
 
         [[nodiscard]] static constexpr ExpectedMatrix adjoint(Matrix const& matrix)
@@ -349,7 +349,7 @@ namespace Linalg {
             }
 
             // adjoSize is transposed of complement matrix
-            return ExpectedMatrix{Matrix::transposition(complement)};
+            return ExpectedMatrix{Matrix::transpose(complement)};
         }
 
         [[nodiscard]] static constexpr ExpectedMatrix inverse(Matrix const& matrix)
@@ -411,7 +411,7 @@ namespace Linalg {
                 return ExpectedMatrix{matrix};
 
             // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
-            return ExpectedMatrix{Matrix::transposition(Matrix::lower_triangular(matrix))};
+            return ExpectedMatrix{Matrix::transpose(Matrix::lower_triangular(matrix))};
         }
 
         [[nodiscard]] static constexpr ExpectedMatrix lower_triangular(Matrix const& matrix)
@@ -456,7 +456,7 @@ namespace Linalg {
             return ExpectedMatrix{std::move(lower_triangular)};
         }
 
-        [[nodiscard]] static constexpr ExpectedMatrix product(Matrix const& left, Matrix const& right)
+        [[nodiscard]] static constexpr ExpectedMatrix multiply(Matrix const& left, Matrix const& right)
         {
             Size const left_rows{left.rows()};
             Size const right_rows{right.rows()};
@@ -469,9 +469,9 @@ namespace Linalg {
                 return Unexpected{Error::WRONG_DIMS};
             }
 
-            Size const product_rows{left_rows};
-            Size const product_columns{right_columns};
-            auto product{Matrix::make_zeros(product_rows, product_columns)};
+            Size const multiply_rows{left_rows};
+            Size const multiply_columns{right_columns};
+            auto multiply{Matrix::make_zeros(multiply_rows, multiply_columns)};
 
             for (Size left_row{0}; left_row < left_rows; ++left_row) {
                 for (Size right_column{0}; right_column < right_columns; ++right_column) {
@@ -479,13 +479,13 @@ namespace Linalg {
                     for (Size left_column{0}; left_column < left_columns; ++left_column) {
                         sum += left[left_row][left_column] * right[left_column][right_column];
                     }
-                    product[left_row][right_column] = sum;
+                    multiply[left_row][right_column] = sum;
                 }
             }
-            return ExpectedMatrix{std::move(product)};
+            return ExpectedMatrix{std::move(multiply)};
         }
 
-        [[nodiscard]] static constexpr Matrix sum(Matrix const& left, Matrix const& right) noexcept
+        [[nodiscard]] static constexpr Matrix add(Matrix const& left, Matrix const& right) noexcept
         {
             assert(left.rows() == right.rows());
             assert(left.columns() == right.columns());
@@ -499,7 +499,7 @@ namespace Linalg {
             return sum;
         }
 
-        [[nodiscard]] static constexpr Matrix difference(Matrix const& left, Matrix const& right) noexcept
+        [[nodiscard]] static constexpr Matrix substract(Matrix const& left, Matrix const& right) noexcept
         {
             assert(left.rows() == right.rows());
             assert(left.columns() == right.columns());
@@ -614,11 +614,11 @@ namespace Linalg {
             // assert correct dimensions
             assert(self.columns() == other.rows());
 
-            if (auto product{Matrix::product(self, other)}; product.has_value()) {
-                self = std::move(product).value();
+            if (auto multiply{Matrix::multiply(self, other)}; multiply.has_value()) {
+                self = std::move(multiply).value();
                 return self;
             } else {
-                print(product.error());
+                print(multiply.error());
                 std::unreachable();
             }
         }
@@ -645,11 +645,11 @@ namespace Linalg {
 
             // division is multiplication by inverse
             if (auto inverse{Matrix::inverse(other)}; inverse.has_value()) {
-                if (auto product{Matrix::product(self, inverse.value())}; product.has_value()) {
-                    self = std::move(product).value();
+                if (auto multiply{Matrix::multiply(self, inverse.value())}; multiply.has_value()) {
+                    self = std::move(multiply).value();
                     return self;
                 } else {
-                    print(product.error());
+                    print(multiply.error());
                     std::unreachable();
                 }
             } else {
@@ -673,7 +673,7 @@ namespace Linalg {
             assert(left.rows() == right.rows());
             assert(left.columns() == right.columns());
 
-            return Matrix::sum(left, right);
+            return Matrix::add(left, right);
         }
 
         friend constexpr Matrix operator-(Matrix const& left, Matrix const& right)
@@ -682,7 +682,7 @@ namespace Linalg {
             assert(left.rows() == right.rows());
             assert(left.columns() == right.columns());
 
-            return Matrix::difference(left, right);
+            return Matrix::substract(left, right);
         }
 
         friend constexpr Matrix operator*(Value const& factor, Matrix const& matrix)
@@ -710,12 +710,12 @@ namespace Linalg {
             // assert correct dimensions
             assert(left.columns() == right.rows());
 
-            if (auto product{Matrix::product(left, right)}; product.has_value()) {
+            if (auto multiply{Matrix::multiply(left, right)}; multiply.has_value()) {
                 // i wouldnt get RVO anyway, sinve .value() isnt a local identifier, its a part of a local identifier,
-                // product is a local identifier, but im retutning its value
-                return std::move(product).value();
+                // multiply is a local identifier, but im retutning its value
+                return std::move(multiply).value();
             } else {
-                print(product.error());
+                print(multiply.error());
                 std::unreachable();
             }
         }
@@ -741,10 +741,10 @@ namespace Linalg {
 
             // division is multiplication by inverse
             if (auto inverse{Matrix::inverse(right)}; inverse.has_value()) {
-                if (auto product{Matrix::product(left, inverse.value())}; product.has_value()) {
-                    return std::move(product).value();
+                if (auto multiply{Matrix::multiply(left, inverse.value())}; multiply.has_value()) {
+                    return std::move(multiply).value();
                 } else {
-                    print(product.error());
+                    print(multiply.error());
                     std::unreachable();
                 }
             } else {
@@ -980,7 +980,7 @@ namespace Linalg {
 
         constexpr void transpose(this Matrix& self)
         {
-            self = transposition(self);
+            self = transpose(self);
         }
 
         constexpr void invert(this Matrix& self)
