@@ -167,7 +167,7 @@ namespace Linalg {
         [[nodiscard]] static constexpr Matrix make_column(Size const columns)
         {
             Matrix matrix{};
-            auto& column{matrix.emplace_back()};
+            auto& column{matrix.data_.emplace_back()};
             column.reserve(columns);
             for (Size col{}; col < columns; ++col) {
                 column.emplace_back();
@@ -805,22 +805,21 @@ namespace Linalg {
         constexpr void print(this Matrix const& self) noexcept
         {
             fmt::print("[");
-            for (auto& row : self.data_) {
-                fmt::print("[");
-                for (auto& col : row) {
-                    if constexpr (std::is_integral_v<Value>) {
-                        fmt::print("%d", static_cast<int>(col));
-                    } else if constexpr (std::is_floating_point_v<Value>) {
-                        fmt::print("%f", static_cast<float>(col));
+            if (!self.data_.empty()) {
+                for (auto& row : self.data_) {
+                    fmt::print("[");
+                    if (!row.empty()) {
+                        for (auto& col : row) {
+                            fmt::print("{}", col);
+                            if (col != row.back()) {
+                                fmt::print(", ");
+                            }
+                        }
                     }
-
-                    if (col != row.back()) {
-                        fmt::print(", ");
+                    fmt::print("]");
+                    if (row != self.data_.back()) {
+                        fmt::print(",\n");
                     }
-                }
-                fmt::print("]");
-                if (row != self.data_.back()) {
-                    fmt::print(",\n");
                 }
             }
             fmt::print("]\n");
@@ -1010,7 +1009,7 @@ namespace Linalg {
 
         static constexpr void print(Error const Error) noexcept
         {
-            fmt::print("%s", error_to_string(Error));
+            fmt::print("{}", error_to_string(Error));
         }
 
         MatrixData data_{};

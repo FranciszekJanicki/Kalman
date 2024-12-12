@@ -81,7 +81,8 @@
         "variant": "cpp",
         "print": "cpp",
         "stdfloat": "cpp",
-        "ranges": "cpp"
+        "ranges": "cpp",
+        "queue": "cpp"
     },
     "editor.formatOnSave": true,
     "C_Cpp.default.compilerPath": "/usr/bin/g++",

@@ -12,20 +12,16 @@ int main([[maybe_unused]] const int argc, [[maybe_unused]] char const* argv[])
     using Matrix = Linalg::Matrix<float>;
     using Kalman = Filter::Kalman<float>;
 
-    const auto states{1};
-    const auto measurements{1};
-    const auto inputs{1};
-
-    Kalman kalman{Matrix::make_ones(states, inputs),
-                  Matrix::make_ones(states, states),
-                  Matrix::make_ones(states, inputs),
-                  Matrix::make_ones(inputs, inputs),
-                  Matrix::make_ones(measurements, states),
-                  Matrix::make_ones(measurements, measurements)};
+    Kalman kalman{Matrix::make_eye(1),
+                  Matrix::make_eye(1),
+                  Matrix::make_eye(1),
+                  Matrix::make_eye(1),
+                  Matrix::make_eye(1),
+                  Matrix::make_eye(1)};
 
     auto i{0};
     while (i++ < 100) {
-        std::invoke(kalman, Matrix::make_ones(states, 1), Matrix::make_ones(states, 1));
+        std::invoke(kalman, Matrix::make_column(1), Matrix::make_column(1));
         kalman.print_state();
     }
 
