@@ -1,5 +1,5 @@
-#ifndef KALMAN_HPP
-#define KALMAN_HPP
+#ifndef EXTENDED_KALMAN_HPP
+#define EXTENDED_KALMAN_HPP
 
 #include "arithmetic.hpp"
 #include "matrix.hpp"
@@ -9,17 +9,17 @@
 
 namespace Filter {
 
-    template <Linalg::Arithmetic Value>
-    struct Kalman {
+    template <typename Value>
+    struct ExtendedKalman {
     public:
         using Matrix = Linalg::Matrix<Value>;
 
-        constexpr Kalman(Matrix&& state_transition,
-                         Matrix&& state_covariance,
-                         Matrix&& input_transition,
-                         Matrix&& input_covariance,
-                         Matrix&& measurement_transition,
-                         Matrix&& measurement_covariance) :
+        constexpr ExtendedKalman(Matrix&& state_transition,
+                                 Matrix&& state_covariance,
+                                 Matrix&& input_transition,
+                                 Matrix&& input_covariance,
+                                 Matrix&& measurement_transition,
+                                 Matrix&& measurement_covariance) :
             state_transition_{std::forward<Matrix>(state_transition)},
             state_covariance_{std::forward<Matrix>(state_covariance)},
             input_transition_{std::forward<Matrix>(input_transition)},
@@ -30,12 +30,12 @@ namespace Filter {
             initialize();
         }
 
-        constexpr Kalman(Matrix const& state_transition,
-                         Matrix const& state_covariance,
-                         Matrix const& input_transition,
-                         Matrix const& input_covariance,
-                         Matrix const& measurement_transition,
-                         Matrix const& measurement_covariance) :
+        constexpr ExtendedKalman(Matrix const& state_transition,
+                                 Matrix const& state_covariance,
+                                 Matrix const& input_transition,
+                                 Matrix const& input_covariance,
+                                 Matrix const& measurement_transition,
+                                 Matrix const& measurement_covariance) :
             state_transition_{state_transition},
             state_covariance_{state_covariance},
             input_transition_{input_transition},
@@ -46,20 +46,16 @@ namespace Filter {
             initialize();
         }
 
-        [[nodiscard]] constexpr Matrix operator()(this Kalman& self, Matrix const& input, Matrix const& measurement)
+        [[nodiscard]] constexpr Matrix
+        operator()(this ExtendedKalman& self, Matrix const& input, Matrix const& measurement)
         {
             self.predict(input);
             self.correct(measurement);
             return self.state_;
         }
 
-        constexpr void print_state(this Kalman const& self) noexcept
-        {
-            self.state_.print();
-        }
-
     private:
-        constexpr void predict(this Kalman& self, Matrix const& input)
+        constexpr void predict(this ExtendedKalman& self, Matrix const& input)
         {
             if (!self.initialized_) {
                 fmt::print("Filter uninitialized!");
@@ -76,7 +72,7 @@ namespace Filter {
                 (self.input_transition_ * self.input_covariance_ * Matrix::transpose(self.input_transition_));
         }
 
-        constexpr void correct(this Kalman& self, Matrix const& measurement)
+        constexpr void correct(this ExtendedKalman& self, Matrix const& measurement)
         {
             if (!self.initialized_) {
                 fmt::print("Filter uninitialized!");
@@ -92,19 +88,17 @@ namespace Filter {
                                            self.measurement_covariance_};
 
             /* calculate kalman gain */
-            auto const kalman_gain{(self.state_covariance_ * Matrix::transpose(self.measurement_transition_)) *
+            auto const kalman_gain{self.state_covariance_ * Matrix::transpose(self.measurement_transition_) *
                                    Matrix::inverse(residual_covariance).value()};
 
             /* correct state prediction_ */
             self.state_ += (kalman_gain * innovation);
 
             /* correct state covariance_ */
-            self.state_covariance_ =
-                (Matrix::make_eye(self.state_transition_.rows()) - kalman_gain * self.measurement_transition_) *
-                self.state_covariance_;
+            self.state_covariance_ -= (kalman_gain * self.measurement_transition_ * self.state_covariance_);
         }
 
-        void initialize(this Kalman& self) noexcept
+        void initialize(this ExtendedKalman& self) noexcept
         {
             if (!self.initialized_) {
                 fmt::print("Checking correct dimensions");
@@ -142,4 +136,4 @@ namespace Filter {
 
 }; // namespace Filter
 
-#endif // KALMAN_HPP
+#endif // EXTENDED_KALMAN_HPP
