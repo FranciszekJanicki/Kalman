@@ -18,6 +18,7 @@ add_library(Lib STATIC
     "lib/quaternion3d.hpp"
     "lib/dijkstra.hpp"
     "lib/vector.hpp"
+    "lib/lqr.hpp"
 )
 
 set_target_properties(Lib PROPERTIES LINKER_LANGUAGE CXX)

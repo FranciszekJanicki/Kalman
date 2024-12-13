@@ -1,4 +1,5 @@
 #include "filters.hpp"
+#include "lqr.hpp"
 #include "matrix.hpp"
 #include "rotation3d.hpp"
 #include "vector.hpp"
