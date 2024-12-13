@@ -1,6 +1,6 @@
 #include "filters.hpp"
-#include "lqr.hpp"
 #include "matrix.hpp"
+#include "regulator.hpp"
 #include "rotation3d.hpp"
 #include "vector.hpp"
 #include "vector3d.hpp"
