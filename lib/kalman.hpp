@@ -145,55 +145,52 @@ namespace Filter {
                 throw std::runtime_error{"Wrong state_transition columns!"};
             }
             if (self.input_transition_.rows() != states) {
-                throw std::runtime_error{"Wrong input_transition_ rows!"};
+                throw std::runtime_error{"Wrong input_transition rows!"};
             }
             if (self.input_transition_.columns() != inputs) {
-                throw std::runtime_error{"Wrong input_transition_ columns!"};
+                throw std::runtime_error{"Wrong input_transition columns!"};
             }
             if (self.state_covariance_.rows() != states) {
-                throw std::runtime_error{"Wrong state_covariance_ rows!"};
+                throw std::runtime_error{"Wrong state_covariance rows!"};
             }
             if (self.state_covariance_.columns() != states) {
-                throw std::runtime_error{"Wrong state_covariance_ columns!"};
+                throw std::runtime_error{"Wrong state_covariance columns!"};
             }
             if (self.input_covariance_.rows() != inputs) {
-                throw std::runtime_error{"Wrong input_covariance_ rows!"};
+                throw std::runtime_error{"Wrong input_covariance rows!"};
             }
             if (self.input_covariance_.columns() != inputs) {
-                throw std::runtime_error{"Wrong input_covariance_ columns!"};
+                throw std::runtime_error{"Wrong input_covariance columns!"};
             }
             if (self.measurement_transition_.rows() != measurements) {
-                throw std::runtime_error{"Wrong measurement_transition_ rows!"};
+                throw std::runtime_error{"Wrong measurement_transition rows!"};
             }
             if (self.measurement_transition_.columns() != states) {
-                throw std::runtime_error{"Wrong measurement_transition_ columns!"};
+                throw std::runtime_error{"Wrong measurement_transition columns!"};
             }
             if (self.measurement_covariance_.rows() != measurements) {
-                throw std::runtime_error{"Wrong measurement_covariance_ rows!"};
+                throw std::runtime_error{"Wrong measurement_covariance rows!"};
             }
             if (self.measurement_covariance_.columns() != measurements) {
-                throw std::runtime_error{"Wrong measurement_covariance_ columns!"};
+                throw std::runtime_error{"Wrong measurement_covariance columns!"};
             }
         }
 
         Matrix state_{}; // states x 1
         Matrix predicted_state_{};
-
         Matrix state_transition_{}; // states x inputs
-
         Matrix state_covariance_{}; // states x states
         Matrix predicted_state_covariance_{};
 
         Matrix input_transition_{}; // states x inputs
-
         Matrix input_covariance_{}; //  inputs x inputs
 
         Matrix measurement_transition_{}; // measurements x states
-
         Matrix measurement_covariance_{}; // measurements x measurements
 
         Matrix process_noise_{}; // states x states
     };
+
 }; // namespace Filter
 
 #endif // KALMAN_HPP

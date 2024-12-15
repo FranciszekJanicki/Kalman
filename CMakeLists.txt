@@ -19,6 +19,11 @@ add_library(Lib STATIC
     "lib/dijkstra.hpp"
     "lib/vector.hpp"
     "lib/regulator.hpp"
+    "lib/pid.hpp"
+    "lib/lqr.hpp"
+    "lib/adrc.hpp"
+    "lib/binary.hpp"
+    "lib/ternary.hpp"
 )
 
 set_target_properties(Lib PROPERTIES LINKER_LANGUAGE CXX)

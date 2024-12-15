@@ -151,12 +151,12 @@ namespace Linalg {
 
             assert(rows == columns);
             if (rows != columns) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             // assert cofactor isnt calculated for minor bigger than matrix
             assert(dimensions <= row && dimensions <= column);
             if (dimensions > row || dimensions > column) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             // minor is scalar, can omit later code
             if (dimensions == 0) {
@@ -190,13 +190,13 @@ namespace Linalg {
 
             assert(rows == columns);
             if (rows != columns) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             // assert minor isnt bigger than matrix
             assert(rows >= dimensions && columns >= dimensions);
             if (rows < dimensions || columns < dimensions) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             // matrix is scalar, can omit later code
@@ -259,7 +259,7 @@ namespace Linalg {
 
             assert(rows == columns);
             if (rows != columns) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             // matrixsquare
@@ -310,7 +310,7 @@ namespace Linalg {
             Size const columns{matrix.columns()};
 
             if (rows != columns) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             // matrixsquare
@@ -325,7 +325,7 @@ namespace Linalg {
 
                 // assert correct determinant
                 if (det == 0) {
-                    throw std::runtime_error{"Singularity"};
+                    throw std::runtime_error{"Singularity\n"};
                 }
 
                 try {
@@ -348,7 +348,7 @@ namespace Linalg {
 
             assert(rows == columns);
             if (rows != columns) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             // matrixsquare
@@ -372,7 +372,7 @@ namespace Linalg {
 
             assert(rows == columns);
             if (rows != columns) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             // matrixsquare
@@ -416,7 +416,7 @@ namespace Linalg {
 
             assert(left_columns == right_rows);
             if (left_columns != right_rows) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             Size const product_rows{left_rows};
@@ -438,7 +438,7 @@ namespace Linalg {
         [[nodiscard]] static constexpr Matrix sum(Matrix const& left, Matrix const& right)
         {
             if (left.columns() != right.columns() || left.rows() != right.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             auto sum{Matrix::make_zeros(left.rows(), left.columns())};
@@ -453,7 +453,7 @@ namespace Linalg {
         [[nodiscard]] static constexpr Matrix substract(Matrix const& left, Matrix const& right)
         {
             if (left.columns() != right.columns() || left.rows() != right.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             auto difference{Matrix::make_zeros(left.rows(), left.columns())};
@@ -529,7 +529,7 @@ namespace Linalg {
         constexpr Matrix& operator+=(this Matrix& self, Matrix const& other)
         {
             if (self.columns() != other.columns() || self.rows() != other.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             for (Size row{0}; row < self.rows(); ++row) {
@@ -543,7 +543,7 @@ namespace Linalg {
         constexpr Matrix& operator-=(this Matrix& self, Matrix const& other)
         {
             if (self.columns() != other.columns() || self.rows() != other.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             for (Size row{0}; row < self.rows(); ++row) {
@@ -568,7 +568,7 @@ namespace Linalg {
         constexpr Matrix& operator*=(this Matrix& self, Matrix const& other)
         {
             if (self.columns() != other.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             try {
@@ -583,7 +583,7 @@ namespace Linalg {
         {
             // assert no division by 0!!!
             if (factor == 0) {
-                throw std::runtime_error{"Division by 0"};
+                throw std::runtime_error{"Division by 0\n"};
             }
 
             // factor is 1 then dont need to do anything
@@ -599,7 +599,7 @@ namespace Linalg {
         constexpr Matrix& operator/=(this Matrix& self, Matrix const& other)
         {
             if (self.columns() != other.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             // division is multiplication by inverse
@@ -619,7 +619,7 @@ namespace Linalg {
         constexpr Matrix& operator^=(this Matrix& self, Value const& factor)
         {
             if (!self.is_square()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             for (Value i{}; i < factor - 1; ++i) {
@@ -631,7 +631,7 @@ namespace Linalg {
         friend constexpr Matrix operator+(Matrix const& left, Matrix const& right)
         {
             if (left.columns() != right.columns() || left.rows() != right.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             return Matrix::sum(left, right);
@@ -640,7 +640,7 @@ namespace Linalg {
         friend constexpr Matrix operator-(Matrix const& left, Matrix const& right)
         {
             if (left.columns() != right.columns() || left.rows() != right.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             return Matrix::substract(left, right);
@@ -669,7 +669,7 @@ namespace Linalg {
         friend constexpr Matrix operator*(Matrix const& left, Matrix const& right)
         {
             if (left.columns() != right.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             try {
@@ -684,7 +684,7 @@ namespace Linalg {
         {
             // assert no division by 0!!!
             if (factor == 0) {
-                throw std::runtime_error{"Division by zero"};
+                throw std::runtime_error{"Division by zero\n"};
             }
 
             // factor is 1 then dont need to do anything
@@ -699,7 +699,7 @@ namespace Linalg {
         friend constexpr Matrix operator/(Matrix const& left, Matrix const& right)
         {
             if (left.columns() != right.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
 
             // division is multiplication by inverse
@@ -718,7 +718,7 @@ namespace Linalg {
         friend constexpr Matrix operator^(Matrix const& matrix, Value const& factor)
         {
             if (!matrix.is_square()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             Matrix result{matrix};
             for (Value i{}; i < factor - 1; ++i) {
@@ -740,7 +740,7 @@ namespace Linalg {
         [[nodiscard]] constexpr VectorData const& operator[](this Matrix const& self, Size const row)
         {
             if (row > self.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             return self.data_[row];
         }
@@ -748,7 +748,7 @@ namespace Linalg {
         [[nodiscard]] constexpr VectorData& operator[](this Matrix& self, Size const row)
         {
             if (row > self.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             return self.data_[row];
         }
@@ -756,7 +756,7 @@ namespace Linalg {
         [[nodiscard]] constexpr Value& operator[](this Matrix& self, Size const row, Size const column)
         {
             if (row > self.rows() || column > self.columns()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             return self.data_[row][column];
         }
@@ -764,7 +764,7 @@ namespace Linalg {
         [[nodiscard]] constexpr Value const& operator[](this Matrix const& self, Size const row, Size const column)
         {
             if (row > self.rows() || column > self.columns()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             return self.data_[row][column];
         }
@@ -822,7 +822,7 @@ namespace Linalg {
         constexpr void insert_row(this Matrix& self, Size const row, VectorData const& new_row)
         {
             if (new_row.size() != self.columns()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             self.data_.insert(std::next(self.data_.begin(), row), new_row);
         }
@@ -830,7 +830,7 @@ namespace Linalg {
         constexpr void insert_column(this Matrix& self, Size const column, VectorData const& new_column)
         {
             if (new_column.size() != self.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             for (auto const& row : self.data_) {
                 row.insert(std::next(row.begin(), column), new_column[column]);
@@ -840,7 +840,7 @@ namespace Linalg {
         constexpr void delete_row(this Matrix& self, Size const row)
         {
             if (row > self.rows()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             self.data_.erase(std::next(self.data_.begin(), row));
         }
@@ -848,7 +848,7 @@ namespace Linalg {
         constexpr void delete_column(this Matrix& self, Size const column)
         {
             if (column > self.columns()) {
-                throw std::runtime_error{"Wrong dimensions"};
+                throw std::runtime_error{"Wrong dimensions\n"};
             }
             for (Size row{0}; row < self.rows(); ++row) {
                 self.data_[row].erase(std::next(self.data_[row].begin(), column));

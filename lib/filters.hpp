@@ -2,7 +2,6 @@
 #define FILTERS_HPP
 
 #include "arithmetic.hpp"
-#include "kalman.hpp"
 #include <functional>
 #include <queue>
 #include <utility>

@@ -1,10 +1,4 @@
-#include "filters.hpp"
-#include "matrix.hpp"
-#include "regulator.hpp"
-#include "rotation3d.hpp"
-#include "vector.hpp"
-#include "vector3d.hpp"
-#include "vector6d.hpp"
+#include "kalman.hpp"
 #include <fmt/core.h>
 #include <functional>
 
