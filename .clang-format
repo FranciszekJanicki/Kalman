@@ -30,7 +30,7 @@ BraceWrapping:
   AfterControlStatement: false
   AfterEnum: false
   AfterNamespace: false
-  BeforeCatch: true
+  BeforeCatch: false
   BeforeElse: false
   IndentBraces: false
   AfterFunction: true

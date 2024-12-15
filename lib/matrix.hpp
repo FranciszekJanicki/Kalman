@@ -8,61 +8,18 @@
 #include <expected>
 #include <fmt/core.h>
 #include <initializer_list>
+#include <stdexcept>
 #include <utility>
 #include <vector>
-
-/* OVERVIEW:
-    -create matrixes of given sizes using Matrix::Matrix(...) constructors (round bracket
-    initialization) or using Matrix::ones(...), Matrix::zeros(...) and Matrix::eye(...)  factory
-    functions
-
-    -create matrixes of given data using Matrix::Matrix{...} constructors (curly bracket initialization)
-    or using Matrix::Matrix(...), Matrix::row(...), Matrix::column(...) factory functions
-    (overloads with std::initializer_list, be careful, because {} init will always call these overloads)
-
-    -create row, column vectors  and diagonal matrixes with given data using Matrix::Matrix(tag, ...)
-    constructors (round bracket initialiation, first param being tag) or using Matrix::row(...),
-    Matrix::column(...) and Matrix::diagonal(...) factory functions
-
-    -assign data using operator= assingment operators or using Matrix::data(...) member functions
-    -access data using Matrix() conversion operators or using Matrix::data() member functions
-
-    -transpose using Matrix::transpose() and invert using Matrix::inver() member functions (invertion
-    will fail if not possible)
-
-    -multiply matrixwith matrix, multiply scalar with matrixand matrixwith scalar,
-    divide matrixwith Matrix(same as multiplying by inverse), add matrixes, substract matrixes, of course
-    all if dimensions are correct for each of these operations
-
-    -you can printf matrixusing Matrix::print() member function (using printf(), can change to std::print
-    if compiler supports it)
-
-    -full interface for data structure (std::vector<std::vector<type>> here)
-
-    -full constexpr support (remember that dynamic memory allocated at compile time, stays at compile time- if you want
-    to perform some matrixcalculations at compile time and then get result to run time, use
-    std::array<std::array<type>> and copy from data (Matrix::data() accessors) to array, using
-    Matrix::rows() and Matrix::cols() to specify std::arrays dimensions)
-*/
 
 namespace Linalg {
 
     template <Arithmetic Value>
     struct Matrix {
     public:
-        enum struct Error {
-            WRONG_DIMS,
-            SINGULARITY,
-            BAD_ALLOC,
-            BAD_ACCESS,
-        };
-
         using Size = std::size_t;
         using VectorData = std::vector<Value>;
         using MatrixData = std::vector<std::vector<Value>>;
-        using ExpectedMatrix = std::expected<Matrix, Error>;
-        using ExpectedDet = std::expected<Value, Error>;
-        using Unexpected = std::unexpected<Error>;
 
         [[nodiscard]] static constexpr Matrix
         make_matrix(std::initializer_list<const std::initializer_list<Value>> const data)
@@ -186,24 +143,24 @@ namespace Linalg {
             return matrix;
         }
 
-        [[nodiscard]] static constexpr ExpectedMatrix
+        [[nodiscard]] static constexpr Matrix
         minor(Matrix const& matrix, Size const row, Size const column, Size const dimensions)
         {
             Size const rows{matrix.rows()};
             Size const columns{matrix.columns()};
-            // assert correct dimensions
+
             assert(rows == columns);
             if (rows != columns) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
             // assert cofactor isnt calculated for minor bigger than matrix
             assert(dimensions <= row && dimensions <= column);
             if (dimensions > row || dimensions > column) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
             // minor is scalar, can omit later code
             if (dimensions == 0) {
-                return ExpectedMatrix{matrix};
+                return matrix;
             }
 
             auto minor{make_zeros(dimensions, dimensions)};
@@ -223,32 +180,32 @@ namespace Linalg {
                     }
                 }
             }
-            return ExpectedMatrix{std::move(minor)};
+            return minor;
         }
 
-        [[nodiscard]] static constexpr ExpectedDet determinant(Matrix const& matrix, Size const dimensions)
+        [[nodiscard]] static constexpr Value determinant(Matrix const& matrix, Size const dimensions)
         {
             Size const rows{matrix.rows()};
             Size const columns{matrix.columns()};
-            // assert correct dimensions
+
             assert(rows == columns);
             if (rows != columns) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
 
             // assert minor isnt bigger than matrix
             assert(rows >= dimensions && columns >= dimensions);
             if (rows < dimensions || columns < dimensions) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
 
             // matrix is scalar, can omit later code
             if (dimensions == 1) {
-                return ExpectedDet{matrix[0][0]};
+                return matrix[0][0];
             }
             // matrix is 2x2 matrix, can omit later code
             if (dimensions == 2) {
-                return ExpectedDet{(matrix[0][0] * matrix[1][1]) - (matrix[1][0] * matrix[0][1])};
+                return (matrix[0][0] * matrix[1][1]) - (matrix[1][0] * matrix[0][1]);
             }
 
             auto det{static_cast<Value>(0)};
@@ -259,25 +216,22 @@ namespace Linalg {
             for (Size column{0}; column < dimensions; ++column) {
                 // cofactor of matrix[0][column]
 
-                if (auto result_minor{Matrix::minor(matrix, 0, column, dimensions)}; result_minor.has_value()) {
-                    minor = std::move(result_minor).value();
-                } else {
-                    print(result_minor.error());
-                    std::unreachable();
-                }
-
-                if (auto result_det{Matrix::determinant(minor, dimensions - 1)}; result_det.has_value()) {
-                    det += sign * matrix[0][column] * result_det.value();
-                } else {
-                    print(result_det.error());
-                    std::unreachable();
+                try {
+                    minor = Matrix::minor(matrix, 0, column, dimensions);
+                    try {
+                        det += sign * matrix[0][column] * Matrix::determinant(minor, dimensions - 1);
+                    } catch (std::runtime_error const& error) {
+                        throw error;
+                    }
+                } catch (std::runtime_error const& error) {
+                    throw error;
                 }
 
                 // alternate sign
                 sign *= static_cast<Value>(-1);
             }
 
-            return ExpectedDet{det};
+            return det;
         }
 
         [[nodiscard]] static constexpr Matrix transpose(Matrix const& matrix)
@@ -298,21 +252,21 @@ namespace Linalg {
             return transpose;
         }
 
-        [[nodiscard]] static constexpr ExpectedMatrix adjoint(Matrix const& matrix)
+        [[nodiscard]] static constexpr Matrix adjoint(Matrix const& matrix)
         {
             Size const rows{matrix.rows()};
             Size const columns{matrix.columns()};
-            // assert correct dimensions
+
             assert(rows == columns);
             if (rows != columns) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
 
             // matrixsquare
             Size const dimensions{rows};
             // matrix is scalar, can omit later code
             if (dimensions == 1) {
-                return ExpectedMatrix{matrix};
+                return matrix;
             }
 
             auto complement{Matrix::make_zeros(dimensions, dimensions)};
@@ -324,11 +278,10 @@ namespace Linalg {
                 for (Size column{0}; column < dimensions; column++) {
                     // get cofactor of matrix[row][column]
 
-                    if (auto result_minor{Matrix::minor(matrix, row, column, dimensions)}; result_minor.has_value()) {
-                        minor = std::move(result_minor).value();
-                    } else {
-                        print(result_minor.error());
-                        std::unreachable();
+                    try {
+                        minor = Matrix::minor(matrix, row, column, dimensions);
+                    } catch (std::runtime_error const& error) {
+                        throw error;
                     }
 
                     // sign of adj[column][row] positive if sum of row and column indexes is even
@@ -339,96 +292,94 @@ namespace Linalg {
                     }
 
                     // complement is matrixof determinants of minors with alternating signs!!!
-                    if (auto result_det{determinant(minor, dimensions - 1)}; result_det.has_value()) {
-                        complement[row][column] = sign * result_det.value();
-                    } else {
-                        print(result_det.error());
-                        std::unreachable();
+                    try {
+                        complement[row][column] = sign * Matrix::determinant(minor, dimensions - 1);
+                    } catch (std::runtime_error const& error) {
+                        throw error;
                     }
                 }
             }
 
             // adjoSize is transposed of complement matrix
-            return ExpectedMatrix{Matrix::transpose(complement)};
+            return Matrix::transpose(complement);
         }
 
-        [[nodiscard]] static constexpr ExpectedMatrix inverse(Matrix const& matrix)
+        [[nodiscard]] static constexpr Matrix inverse(Matrix const& matrix)
         {
             Size const rows{matrix.rows()};
             Size const columns{matrix.columns()};
-            // assert correct dimensions
-            assert(rows == columns);
+
             if (rows != columns) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
 
             // matrixsquare
             Size const dimensions{rows};
             // matrix is scalar, can omit later code
             if (dimensions == 1) {
-                return ExpectedMatrix{matrix};
+                return matrix;
             }
 
-            if (auto result_det{Matrix::determinant(matrix, dimensions)}; result_det.has_value()) {
-                auto const det{std::move(result_det).value()};
+            try {
+                auto det{Matrix::determinant(matrix, dimensions)};
 
                 // assert correct determinant
-                assert(det != 0);
                 if (det == 0) {
-                    return Unexpected{Error::SINGULARITY};
+                    throw std::runtime_error{"Singularity"};
                 }
 
-                if (auto result_adjoint{Matrix::adjoint(matrix)}; result_adjoint.has_value()) {
-                    auto const adjoint{std::move(result_adjoint).value()};
-
+                try {
                     // inverse is adjoint matrixdivided by det factor
                     // division is multiplication by inverse
-                    return ExpectedMatrix{Matrix::scale(adjoint, 1 / det)};
-                } else {
-                    print(result_adjoint.error());
-                    std::unreachable();
+                    return Matrix::scale(Matrix::adjoint(matrix), 1 / det);
+                } catch (std::runtime_error const& error) {
+                    throw error;
                 }
-            } else {
-                print(result_det.error());
-                std::unreachable();
+
+            } catch (std::runtime_error const& error) {
+                throw error;
             }
         }
 
-        [[nodiscard]] static constexpr ExpectedMatrix upper_triangular(Matrix const& matrix)
+        [[nodiscard]] static constexpr Matrix upper_triangular(Matrix const& matrix)
         {
             Size const rows{matrix.rows()};
             Size const columns{matrix.columns()};
-            // assert correct dimensions
+
             assert(rows == columns);
             if (rows != columns) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
 
             // matrixsquare
             Size const dimensions{rows};
             // matrix is scalar
             if (dimensions == 1)
-                return ExpectedMatrix{matrix};
+                return matrix;
 
             // upper triangular is just transpose of lower triangular (cholesky- A = L*L^T)
-            return ExpectedMatrix{Matrix::transpose(Matrix::lower_triangular(matrix))};
+            try {
+                return Matrix::transpose(Matrix::lower_triangular(matrix));
+            } catch (std::runtime_error const& error) {
+                throw error;
+            }
         }
 
-        [[nodiscard]] static constexpr ExpectedMatrix lower_triangular(Matrix const& matrix)
+        [[nodiscard]] static constexpr Matrix lower_triangular(Matrix const& matrix)
         {
             Size const rows{matrix.rows()};
             Size const columns{matrix.columns()};
-            // assert correct dimensions
+
             assert(rows == columns);
             if (rows != columns) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
 
             // matrixsquare
             Size const dimensions = rows; // = columns;
             // matrix is scalar
             if (dimensions == 1) {
-                return ExpectedMatrix{matrix};
+                return matrix;
             }
 
             auto lower_triangular{Matrix::make_zeros(dimensions, dimensions)};
@@ -453,25 +404,24 @@ namespace Linalg {
                     }
                 }
             }
-            return ExpectedMatrix{std::move(lower_triangular)};
+            return lower_triangular;
         }
 
-        [[nodiscard]] static constexpr ExpectedMatrix multiply(Matrix const& left, Matrix const& right)
+        [[nodiscard]] static constexpr Matrix product(Matrix const& left, Matrix const& right)
         {
             Size const left_rows{left.rows()};
             Size const right_rows{right.rows()};
             Size const left_columns = {left.columns()};
             Size const right_columns{right.columns()};
 
-            // assert correct dimensions
             assert(left_columns == right_rows);
             if (left_columns != right_rows) {
-                return Unexpected{Error::WRONG_DIMS};
+                throw std::runtime_error{"Wrong dimensions"};
             }
 
-            Size const multiply_rows{left_rows};
-            Size const multiply_columns{right_columns};
-            auto multiply{Matrix::make_zeros(multiply_rows, multiply_columns)};
+            Size const product_rows{left_rows};
+            Size const product_columns{right_columns};
+            auto product{Matrix::make_zeros(product_rows, product_columns)};
 
             for (Size left_row{0}; left_row < left_rows; ++left_row) {
                 for (Size right_column{0}; right_column < right_columns; ++right_column) {
@@ -479,16 +429,17 @@ namespace Linalg {
                     for (Size left_column{0}; left_column < left_columns; ++left_column) {
                         sum += left[left_row][left_column] * right[left_column][right_column];
                     }
-                    multiply[left_row][right_column] = sum;
+                    product[left_row][right_column] = sum;
                 }
             }
-            return ExpectedMatrix{std::move(multiply)};
+            return product;
         }
 
-        [[nodiscard]] static constexpr Matrix add(Matrix const& left, Matrix const& right) noexcept
+        [[nodiscard]] static constexpr Matrix sum(Matrix const& left, Matrix const& right)
         {
-            assert(left.rows() == right.rows());
-            assert(left.columns() == right.columns());
+            if (left.columns() != right.columns() || left.rows() != right.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
             auto sum{Matrix::make_zeros(left.rows(), left.columns())};
             for (Size row{0}; row < left.rows(); ++row) {
@@ -499,10 +450,11 @@ namespace Linalg {
             return sum;
         }
 
-        [[nodiscard]] static constexpr Matrix substract(Matrix const& left, Matrix const& right) noexcept
+        [[nodiscard]] static constexpr Matrix substract(Matrix const& left, Matrix const& right)
         {
-            assert(left.rows() == right.rows());
-            assert(left.columns() == right.columns());
+            if (left.columns() != right.columns() || left.rows() != right.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
             auto difference{Matrix::make_zeros(left.rows(), left.columns())};
             for (Size row{0}; row < left.rows(); ++row) {
@@ -574,11 +526,11 @@ namespace Linalg {
             self.data_ = data;
         }
 
-        constexpr Matrix& operator+=(this Matrix& self, Matrix const& other) noexcept
+        constexpr Matrix& operator+=(this Matrix& self, Matrix const& other)
         {
-            // assert correct dimensions
-            assert(other.rows() == self.rows());
-            assert(other.columns() == self.rows());
+            if (self.columns() != other.columns() || self.rows() != other.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
             for (Size row{0}; row < self.rows(); ++row) {
                 for (Size column{0}; column < self.columns(); ++column) {
@@ -588,11 +540,11 @@ namespace Linalg {
             return self;
         }
 
-        constexpr Matrix& operator-=(this Matrix& self, Matrix const& other) noexcept
+        constexpr Matrix& operator-=(this Matrix& self, Matrix const& other)
         {
-            // assert correct dimensions
-            assert(other.rows() == self.rows());
-            assert(other.columns() == self.rows());
+            if (self.columns() != other.columns() || self.rows() != other.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
             for (Size row{0}; row < self.rows(); ++row) {
                 for (Size column{0}; column < self.columns(); ++column) {
@@ -615,22 +567,24 @@ namespace Linalg {
 
         constexpr Matrix& operator*=(this Matrix& self, Matrix const& other)
         {
-            // assert correct dimensions
-            assert(self.columns() == other.rows());
+            if (self.columns() != other.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
-            if (auto multiply{Matrix::multiply(self, other)}; multiply.has_value()) {
-                self = std::move(multiply).value();
+            try {
+                self = Matrix::product(self, other);
                 return self;
-            } else {
-                print(multiply.error());
-                std::unreachable();
+            } catch (std::runtime_error const& error) {
+                throw error;
             }
         }
 
         constexpr Matrix& operator/=(this Matrix& self, Value const& factor)
         {
             // assert no division by 0!!!
-            assert(factor != 0);
+            if (factor == 0) {
+                throw std::runtime_error{"Division by 0"};
+            }
 
             // factor is 1 then dont need to do anything
             if (factor == 1) {
@@ -644,27 +598,30 @@ namespace Linalg {
 
         constexpr Matrix& operator/=(this Matrix& self, Matrix const& other)
         {
-            // assert correct dimensions
-            assert(self.columns() == other.rows());
+            if (self.columns() != other.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
             // division is multiplication by inverse
-            if (auto inverse{Matrix::inverse(other)}; inverse.has_value()) {
-                if (auto multiply{Matrix::multiply(self, inverse.value())}; multiply.has_value()) {
-                    self = std::move(multiply).value();
+            try {
+                auto inverse{Matrix::inverse(other)};
+                try {
+                    self = Matrix::product(self, inverse);
                     return self;
-                } else {
-                    print(multiply.error());
-                    std::unreachable();
+                } catch (std::runtime_error const& error) {
+                    throw error;
                 }
-            } else {
-                print(inverse.error());
-                std::unreachable();
+            } catch (std::runtime_error const& error) {
+                throw error;
             }
         }
 
         constexpr Matrix& operator^=(this Matrix& self, Value const& factor)
         {
-            assert(self.is_square());
+            if (!self.is_square()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
+
             for (Value i{}; i < factor - 1; ++i) {
                 self *= self;
             }
@@ -673,18 +630,18 @@ namespace Linalg {
 
         friend constexpr Matrix operator+(Matrix const& left, Matrix const& right)
         {
-            // assert correct dimensions
-            assert(left.rows() == right.rows());
-            assert(left.columns() == right.columns());
+            if (left.columns() != right.columns() || left.rows() != right.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
-            return Matrix::add(left, right);
+            return Matrix::sum(left, right);
         }
 
         friend constexpr Matrix operator-(Matrix const& left, Matrix const& right)
         {
-            // assert correct dimensions
-            assert(left.rows() == right.rows());
-            assert(left.columns() == right.columns());
+            if (left.columns() != right.columns() || left.rows() != right.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
             return Matrix::substract(left, right);
         }
@@ -711,23 +668,24 @@ namespace Linalg {
 
         friend constexpr Matrix operator*(Matrix const& left, Matrix const& right)
         {
-            // assert correct dimensions
-            assert(left.columns() == right.rows());
+            if (left.columns() != right.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
-            if (auto multiply{Matrix::multiply(left, right)}; multiply.has_value()) {
-                // i wouldnt get RVO anyway, sinve .value() isnt a local identifier, its a part of a local identifier,
-                // multiply is a local identifier, but im retutning its value
-                return std::move(multiply).value();
-            } else {
-                print(multiply.error());
-                std::unreachable();
+            try {
+                auto product{Matrix::product(left, right)};
+                return product;
+            } catch (std::runtime_error const& error) {
+                throw error;
             }
         }
 
         friend constexpr Matrix operator/(Matrix const& matrix, Value const& factor)
         {
             // assert no division by 0!!!
-            assert(factor != 0);
+            if (factor == 0) {
+                throw std::runtime_error{"Division by zero"};
+            }
 
             // factor is 1 then dont need to do anything
             if (factor == 1) {
@@ -740,26 +698,28 @@ namespace Linalg {
 
         friend constexpr Matrix operator/(Matrix const& left, Matrix const& right)
         {
-            // assert correct dimensions
-            assert(left.columns() == right.rows());
+            if (left.columns() != right.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
 
             // division is multiplication by inverse
-            if (auto inverse{Matrix::inverse(right)}; inverse.has_value()) {
-                if (auto multiply{Matrix::multiply(left, inverse.value())}; multiply.has_value()) {
-                    return std::move(multiply).value();
-                } else {
-                    print(multiply.error());
-                    std::unreachable();
+            try {
+                auto inverse{Matrix::inverse(right)};
+                try {
+                    return Matrix::product(left, inverse);
+                } catch (std::runtime_error const& error) {
+                    throw error;
                 }
-            } else {
-                print(inverse.error());
-                std::unreachable();
+            } catch (std::runtime_error const& error) {
+                throw error;
             }
         }
 
         friend constexpr Matrix operator^(Matrix const& matrix, Value const& factor)
         {
-            assert(matrix.is_square());
+            if (!matrix.is_square()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             Matrix result{matrix};
             for (Value i{}; i < factor - 1; ++i) {
                 result *= matrix;
@@ -777,30 +737,35 @@ namespace Linalg {
             return self.data_;
         }
 
-        [[nodiscard]] constexpr VectorData const& operator[](this Matrix const& self, Size const row) noexcept
+        [[nodiscard]] constexpr VectorData const& operator[](this Matrix const& self, Size const row)
         {
-            assert(row <= self.rows());
+            if (row > self.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             return self.data_[row];
         }
 
-        [[nodiscard]] constexpr VectorData& operator[](this Matrix& self, Size const row) noexcept
+        [[nodiscard]] constexpr VectorData& operator[](this Matrix& self, Size const row)
         {
-            assert(row <= self.rows());
+            if (row > self.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             return self.data_[row];
         }
 
-        [[nodiscard]] constexpr Value& operator[](this Matrix& self, Size const row, Size const column) noexcept
+        [[nodiscard]] constexpr Value& operator[](this Matrix& self, Size const row, Size const column)
         {
-            assert(row <= self.rows());
-            assert(column <= self.columns());
+            if (row > self.rows() || column > self.columns()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             return self.data_[row][column];
         }
 
-        [[nodiscard]] constexpr Value const&
-        operator[](this Matrix const& self, Size const row, Size const column) noexcept
+        [[nodiscard]] constexpr Value const& operator[](this Matrix const& self, Size const row, Size const column)
         {
-            assert(row <= self.rows());
-            assert(column <= self.columns());
+            if (row > self.rows() || column > self.columns()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             return self.data_[row][column];
         }
 
@@ -856,13 +821,17 @@ namespace Linalg {
 
         constexpr void insert_row(this Matrix& self, Size const row, VectorData const& new_row)
         {
-            assert(new_row.size() == self.columns());
+            if (new_row.size() != self.columns()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             self.data_.insert(std::next(self.data_.begin(), row), new_row);
         }
 
         constexpr void insert_column(this Matrix& self, Size const column, VectorData const& new_column)
         {
-            assert(new_column.size() == self.rows());
+            if (new_column.size() != self.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             for (auto const& row : self.data_) {
                 row.insert(std::next(row.begin(), column), new_column[column]);
             }
@@ -870,13 +839,17 @@ namespace Linalg {
 
         constexpr void delete_row(this Matrix& self, Size const row)
         {
-            assert(row <= self.rows());
+            if (row > self.rows()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             self.data_.erase(std::next(self.data_.begin(), row));
         }
 
         constexpr void delete_column(this Matrix& self, Size const column)
         {
-            assert(column <= self.columns());
+            if (column > self.columns()) {
+                throw std::runtime_error{"Wrong dimensions"};
+            }
             for (Size row{0}; row < self.rows(); ++row) {
                 self.data_[row].erase(std::next(self.data_[row].begin(), column));
             }
@@ -988,34 +961,14 @@ namespace Linalg {
 
         constexpr void invert(this Matrix& self)
         {
-            if (auto inverse{Matrix::inverse(self)}; inverse.has_value()) {
-                self = std::move(inverse).value();
-            } else {
-                print(inverse.error());
-                std::unreachable();
+            try {
+                self = Matrix::inverse(self);
+            } catch (std::runtime_error const& error) {
+                throw error;
             }
         }
 
     private:
-        static constexpr const char* error_to_string(Error const Error) noexcept
-        {
-            switch (Error) {
-                case Error::WRONG_DIMS:
-                    return "Wrong dims";
-                case Error::SINGULARITY:
-                    return "Singularity";
-                case Error::BAD_ALLOC:
-                    return "Bad alloc";
-                default:
-                    return "None";
-            }
-        }
-
-        static constexpr void print(Error const Error) noexcept
-        {
-            fmt::print("{}", error_to_string(Error));
-        }
-
         MatrixData data_{};
     };
 }; // namespace Linalg

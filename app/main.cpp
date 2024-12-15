@@ -31,8 +31,8 @@ int main([[maybe_unused]] const int argc, [[maybe_unused]] char const* argv[])
     while (i++ < 100) {
         try {
             std::invoke(kalman, Matrix({{1.0}, {0.0}}), Matrix({{1.0}, {0.0}}));
-        }
-        catch (std::runtime_error const error) {
+        } catch (std::runtime_error const& error) {
+            fmt::print("{}", error.what());
         }
 
         kalman.print_state();
