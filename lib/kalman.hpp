@@ -58,29 +58,33 @@ namespace Filter {
         {
             try {
                 self.predict(input);
+                self.print_predicted();
                 self.correct(measurement);
+                self.print();
                 return self.state_;
             } catch (std::runtime_error const& error) {
                 throw error;
             }
         }
 
-        constexpr void print_state(this Kalman const& self) noexcept
+        constexpr void print(this Kalman const& self) noexcept
         {
-            fmt::println("state: ");
-            self.state_.print();
-
-            fmt::println("predicted state: ");
-            self.predicted_state_.print();
-        }
-
-        constexpr void print_covariance(this Kalman const& self) noexcept
-        {
-            fmt::println("state covariance: ");
+            fmt::print("state covariance: ");
             self.state_covariance_.print();
 
-            fmt::println("predicted state covariance: ");
+            fmt::print("state: ");
+            self.state_.print();
+            fmt::println("");
+        }
+
+        constexpr void print_predicted(this Kalman const& self) noexcept
+        {
+            fmt::print("predicted state: ");
+            self.predicted_state_.print();
+
+            fmt::print("predicted state covariance: ");
             self.predicted_state_covariance_.print();
+            fmt::println("");
         }
 
     private:

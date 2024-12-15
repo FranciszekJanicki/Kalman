@@ -28,9 +28,6 @@ int main([[maybe_unused]] const int argc, [[maybe_unused]] char const* argv[])
         } catch (std::runtime_error const& error) {
             fmt::print("{}", error.what());
         }
-
-        kalman.print_state();
-        kalman.print_covariance();
     }
 
     return 0;
