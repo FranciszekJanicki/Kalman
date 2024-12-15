@@ -538,11 +538,15 @@ namespace Linalg {
 
         constexpr Matrix() noexcept = default;
 
-        explicit constexpr Matrix(std::initializer_list<std::initializer_list<Value> const> const data) : data_{data}
-        {}
+        explicit constexpr Matrix(std::initializer_list<std::initializer_list<Value> const> const data)
+        {
+            *this = make_matrix(data);
+        }
 
-        constexpr Matrix(Size const rows, Size const columns) : data_{make_zeros(rows, columns)}
-        {}
+        constexpr Matrix(Size const rows, Size const columns)
+        {
+            *this = make_zeros(rows, columns);
+        }
 
         explicit constexpr Matrix(MatrixData&& data) noexcept : data_{std::forward<MatrixData>(data)}
         {}

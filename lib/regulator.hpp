@@ -364,7 +364,6 @@ template <Algorithm algorithm, Linalg::Arithmetic... Args>
         return std::make_unique<Ternary<Value>>(args...);
     }
 }
-}
 
 #endif // REGULATOR_PTR
 }
