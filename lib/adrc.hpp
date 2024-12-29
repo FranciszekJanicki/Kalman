@@ -3,7 +3,7 @@
 
 #include "arithmetic.hpp"
 
-namespace Regulator {
+namespace Regulators {
 
     template <Linalg::Arithmetic Value>
     struct ADRC
@@ -18,6 +18,6 @@ namespace Regulator {
         }
     };
 
-}; // namespace Regulator
+}; // namespace Regulators
 
 #endif // ADRC_HPP

@@ -6,7 +6,7 @@
 #include <queue>
 #include <utility>
 
-namespace Filter {
+namespace Filters {
     template <typename Value>
     using Filter = std::function<Value(Value)>;
 
@@ -49,6 +49,6 @@ namespace Filter {
         };
     }
 
-}; // namespace Filter
+}; // namespace Filters
 
 #endif // FILTERS_HPP

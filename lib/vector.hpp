@@ -5,9 +5,10 @@
 #include <cassert>
 #include <cmath>
 #include <compare>
-#include <expected>
+#include <exception>
 #include <fmt/core.h>
 #include <initializer_list>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -16,16 +17,12 @@ namespace Linalg {
     template <Arithmetic Value>
     struct Vector {
     public:
-        enum struct Error {
-            WRONG_DIMS,
-        };
-
         using Size = std::size_t;
         using VectorData = std::vector<Value>;
-        using ExpectedVector = std::expected<Vector, Error>;
-        using Unexpected = std::unexpected<Error>;
+        using VectorInitializer = std::initializer_list<Value>;
+        using Error = std::runtime_error;
 
-        [[nodiscard]] static constexpr Vector make_vector(std::initializer_list<Value> const data)
+        [[nodiscard]] static constexpr Vector make_vector(VectorInitializer const data)
         {
             Vector vector{};
             vector.data_.reserve(data.size());
@@ -55,26 +52,29 @@ namespace Linalg {
             return vector;
         }
 
-        [[nodiscard]] static constexpr Vector sum(Vector const& left, Vector const& right) noexcept
+        [[nodiscard]] static constexpr Vector sum(Vector const& left, Vector const& right)
         {
-            assert(left.size() == right.size());
+            if (left.size() != right.size()) {
+                throw Error{"Incorrect dimensions!\n"};
+            }
 
-            auto sum{Vector::make_zeros(left.size())};
+            auto sum{make_zeros(left.size())};
             for (Size i{0}; i < left.size(); ++i) {
                 sum[i] = left[i] + right[i];
             }
             return sum;
         }
 
-        [[nodiscard]] static constexpr Vector difference(Vector const& left, Vector const& right) noexcept
+        [[nodiscard]] static constexpr Vector difference(Vector const& left, Vector const& right)
         {
-            assert(left.size() == right.size());
+            if (left.size() != right.size()) {
+                throw Error{"Incorrect dimensions!\n"};
+            }
 
-            auto difference{Vector::make_zeros(left.size())};
+            auto difference{make_zeros(left.size())};
             for (Size i{0}; i < left.size(); ++i) {
                 difference[i] = left[i] - right[i];
             }
-
             return difference;
         }
 
@@ -82,16 +82,15 @@ namespace Linalg {
         {
             Size const size{vector.size()};
 
-            // factor is 1 then dont need to do anything
-            if (factor == 1) {
+            if (factor == std::numeric_limits<Value>::max()) {
+                throw Error{"Multiplication by inf!\n"};
+            } else if (factor == 1) {
                 return vector;
-            }
-            // factor is 0 then return vectorof zeros
-            else if (factor == 0) {
-                return Vector::make_zeros(size);
+            } else if (factor == 0) {
+                return make_zeros(size);
             }
 
-            auto scale{Vector::make_zeros(size)};
+            auto scale{make_zeros(size)};
             for (Size i{0}; i < size; ++i) {
                 scale[i] = vector[i] * factor;
             }
@@ -100,7 +99,7 @@ namespace Linalg {
 
         constexpr Vector() noexcept = default;
 
-        explicit constexpr Vector(std::initializer_list<std::initializer_list<Value> const> const data) : data_{data}
+        explicit constexpr Vector(VectorInitializer const data) : data_{data}
         {}
 
         constexpr Vector(Size const size) : data_{make_zeros(size)}
@@ -122,6 +121,11 @@ namespace Linalg {
 
         constexpr Vector& operator=(Vector&& other) noexcept = default;
 
+        constexpr void operator=(this Vector& self, VectorInitializer const data)
+        {
+            self.data_ = data;
+        }
+
         constexpr void operator=(this Vector& self, VectorData&& data) noexcept
         {
             self.data_ = std::forward<VectorData>(data);
@@ -132,104 +136,89 @@ namespace Linalg {
             self.data_ = data;
         }
 
-        constexpr Vector& operator+=(this Vector& self, Vector const& other) noexcept
+        constexpr Vector& operator+=(this Vector& self, Vector const& other)
         {
-            // assert correct dimensions
-            assert(other.size() == self.size());
-
-            for (Size i{0}; i < self.size(); ++i) {
-                self[i] += other[i];
-            }
-
-            return self;
-        }
-
-        constexpr Vector& operator-=(this Vector& self, Vector const& other) noexcept
-        {
-            // assert correct dimensions
-            assert(other.size() == self.size());
-
-            for (Size i{0}; i < self.size(); ++i) {
-                self[i] -= other[i];
-            }
-
-            return self;
-        }
-
-        constexpr Vector& operator*=(this Vector& self, Value const& factor)
-        {
-            // factor is 1 then dont need to do anything
-            if (factor == 1) {
+            try {
+                self = Vector::sum(self, other);
                 return self;
+            } catch (Error const& error) {
+                throw error;
             }
-
-            self = scale(self, factor);
-            return self;
         }
 
-        constexpr Vector& operator/=(this Vector& self, Value const& factor)
+        constexpr Vector& operator-=(this Vector& self, Vector const& other)
         {
-            // assert no division by 0!!!
-            assert(factor != 0);
-
-            // factor is 1 then dont need to do anything
-            if (factor == 1) {
+            try {
+                self = Vector::difference(self, other);
                 return self;
+            } catch (Error const& error) {
+                throw error;
             }
+        }
 
-            // division is multiplication by inverse
-            self = scale(self, 1 / factor);
-            return self;
+        constexpr Vector& operator*=(this Vector& self, Value const factor)
+        {
+            try {
+                self = Vector::scale(self, factor);
+                return self;
+            } catch (Error const& error) {
+                throw error;
+            }
+        }
+
+        constexpr Vector& operator/=(this Vector& self, Value const factor)
+        {
+            try {
+                self = Vector::scale(self, 1 / factor);
+                return self;
+            } catch (Error const& error) {
+                throw error;
+            }
         }
 
         friend constexpr Vector operator+(Vector const& left, Vector const& right)
         {
-            // assert correct dimensions
-            assert(left.size() == right.size());
-
-            return Vector::sum(left, right);
+            try {
+                return Vector::sum(left, right);
+            } catch (Error const& error) {
+                throw error;
+            }
         }
 
         friend constexpr Vector operator-(Vector const& left, Vector const& right)
         {
-            // assert correct dimensions
-            assert(left.size() == right.size());
-
-            return Vector::difference(left, right);
+            try {
+                return Vector::difference(left, right);
+            } catch (Error const& error) {
+                throw error;
+            }
         }
 
-        friend constexpr Vector operator*(Value const& factor, Vector const& vector)
+        friend constexpr Vector operator*(Value const factor, Vector const& vector)
         {
-            // factor is 1 then dont need to do anything
-            if (factor == 1) {
-                return vector;
+            try {
+                return Vector::scale(vector, factor);
+            } catch (Error const& error) {
+                throw error;
             }
-
-            return Vector::scale(vector, factor);
         }
 
-        friend constexpr Vector operator*(Vector const& vector, Value const& factor)
+        friend constexpr Vector operator*(Vector const& vector, Value const factor)
         {
-            // factor is 1 then dont need to do anything
-            if (factor == 1) {
-                return vector;
+            try {
+                return Vector::scale(vector, factor);
+            } catch (Error const& error) {
+                throw error;
             }
-
-            return Vector::scale(vector, factor);
         }
 
-        friend constexpr Vector operator/(Vector const& vector, Value const& factor)
+        friend constexpr Vector operator/(Vector const& vector, Value const factor)
         {
-            // assert no division by 0!!!
-            assert(factor != 0);
-
-            // factor is 1 then dont need to do anything
-            if (factor == 1) {
-                return vector;
+            try {
+                return Vector::scale(vector, 1 / factor);
+            } catch (Error const& error) {
+                throw error;
             }
-
-            // division is multiplication by inverse
-            return Vector::scale(vector, 1 / factor);
         }
 
         explicit constexpr operator VectorData(this Vector&& self) noexcept
@@ -242,16 +231,21 @@ namespace Linalg {
             return self.data_;
         }
 
-        [[nodiscard]] constexpr Value& operator[](this Vector& self, Size const elem, Size const column) noexcept
+        [[nodiscard]] constexpr Value& operator[](this Vector& self, Size const elem) noexcept
         {
-            assert(elem <= self.size());
+            if (elem > self.size()) {
+                throw Error{"Wrong dimensions\n"};
+            }
+
             return self.data_[elem];
         }
 
-        [[nodiscard]] constexpr Value const&
-        operator[](this Vector const& self, Size const elem, Size const column) noexcept
+        [[nodiscard]] constexpr Value const& operator[](this Vector const& self, Size const elem) noexcept
         {
-            assert(elem <= self.size());
+            if (elem > self.size()) {
+                throw Error{"Wrong dimensions\n"};
+            }
+
             return self.data_[elem];
         }
 
@@ -261,11 +255,7 @@ namespace Linalg {
         {
             fmt::print("[");
             for (auto& elem : self.data_) {
-                if constexpr (std::is_integral_v<Value>) {
-                    fmt::print("%d", static_cast<int>(elem));
-                } else if constexpr (std::is_floating_point_v<Value>) {
-                    fmt::print("%f", static_cast<float>(elem));
-                }
+                fmt::print("{}", elem);
                 if (elem != self.data_.back()) {
                     fmt::print(", ");
                 }
@@ -281,6 +271,11 @@ namespace Linalg {
         [[nodiscard]] constexpr VectorData&& data(this Vector&& self) noexcept
         {
             return std::forward<Vector>(self).data_;
+        }
+
+        constexpr void data(this Vector& self, VectorInitializer const data) noexcept
+        {
+            self.data_ = data;
         }
 
         constexpr void data(this Vector& self, VectorData&& data) noexcept
@@ -329,23 +324,9 @@ namespace Linalg {
         }
 
     private:
-        static constexpr const char* error_to_string(Error const error) noexcept
-        {
-            switch (error) {
-                case Error::WRONG_DIMS:
-                    return "Wrong dims";
-                default:
-                    return "None";
-            }
-        }
-
-        static constexpr void print(Error const error) noexcept
-        {
-            fmt::print("%s", error_to_string(error));
-        }
-
         VectorData data_{};
     };
+
 }; // namespace Linalg
 
 #endif // VECTOR_HPP

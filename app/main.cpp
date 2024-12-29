@@ -1,11 +1,16 @@
 #include "kalman.hpp"
+#include "matrix.hpp"
+#include "quaternion3d.hpp"
+#include "vector.hpp"
+#include "vector3d.hpp"
+#include "vector6d.hpp"
 #include <fmt/core.h>
 #include <functional>
 
-int main([[maybe_unused]] const int argc, [[maybe_unused]] char const* argv[])
+int main([[maybe_unused]] int const argc, [[maybe_unused]] char const* argv[])
 {
     using Matrix = Linalg::Matrix<double>;
-    using Kalman = Filter::Kalman<double>;
+    using Kalman = Filters::Kalman<double>;
 
     auto const dt{1.0};
     auto const sigma_perc{1.0};

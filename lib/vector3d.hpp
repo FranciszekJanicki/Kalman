@@ -2,16 +2,20 @@
 #define VECTOR3D_HPP
 
 #include "arithmetic.hpp"
-#include "quaternion3d.hpp"
 #include <cmath>
 #include <compare>
+#include <exception>
+#include <quaternion3d.hpp>
+#include <stdexcept>
 #include <utility>
+
+using Error = std::runtime_error;
 
 namespace Linalg {
 
     template <Arithmetic Value>
     struct Vector3D {
-        [[nodiscard]] constexpr auto distance(this Vector3D const& self, const Vector3D& other) noexcept
+        [[nodiscard]] constexpr auto distance(this Vector3D const& self, Vector3D const& other) noexcept
         {
             return std::sqrt(std::pow(self.x - other.x, 2) + std::pow(self.y - other.y, 2) +
                              std::pow(self.z - other.z, 2));
@@ -23,7 +27,7 @@ namespace Linalg {
         }
 
         [[nodiscard]] constexpr Vector3D rotated(this Vector3D const& self,
-                                                 const Quaternion3D<Value>& quaternion) noexcept
+                                                 Quaternion3D<Value> const& quaternion) noexcept
         {
             Quaternion3D p(0, self.x, self.y, self.z);
             p *= quaternion;
@@ -31,9 +35,14 @@ namespace Linalg {
             return Vector3D{p.x, p.y, p.z};
         }
 
-        constexpr void rotate(this Vector3D& self, const Quaternion3D<Value>& quaternion) noexcept
+        constexpr void rotate(this Vector3D& self, Quaternion3D<Value> const& quaternion) noexcept
         {
-            self = self.rotated(quaternion);
+            Quaternion3D p(0, self.x, self.y, self.z);
+            p *= quaternion;
+            p *= quaternion.conjugated();
+            self.x = p.x;
+            self.y = p.y;
+            self.z = p.z;
         }
 
         [[nodiscard]] constexpr Vector3D normalized(this Vector3D const& self) noexcept
@@ -44,7 +53,8 @@ namespace Linalg {
 
         constexpr void normalize(this Vector3D& self) noexcept
         {
-            self = self.normalized();
+            const auto im{Value{1} / self.magnitude()};
+            self *= im;
         }
 
         constexpr Vector3D& operator+=(this Vector3D& self, Vector3D const& other) noexcept
@@ -57,40 +67,37 @@ namespace Linalg {
 
         constexpr Vector3D& operator-=(this Vector3D& self, Vector3D const& other) noexcept
         {
-            self.x -= other.x;
-            self.y -= other.y;
-            self.z -= other.z;
+            self += (-1 * other);
             return self;
         }
 
-        constexpr Vector3D& operator*=(this Vector3D& self, Vector3D const& other) noexcept
+        constexpr Vector3D& operator*=(this Vector3D& self, Value const factor)
         {
-            self.x *= other.x;
-            self.y *= other.y;
-            self.z *= other.z;
-            return self;
-        }
-        constexpr Vector3D& operator*=(this Vector3D& self, Value const factor) noexcept
-        {
+            if (factor == std::numeric_limits<Value>::max()) {
+                throw Error{"Multiplication by inf\n"};
+            }
             self.x *= factor;
             self.y *= factor;
             self.z *= factor;
             return self;
         }
 
-        constexpr Vector3D& operator/=(this Vector3D& self, Vector3D const& other) noexcept
+        constexpr Vector3D& operator/=(this Vector3D& self, Value const factor)
         {
-            self.x /= other.x;
-            self.y /= other.y;
-            self.z /= other.z;
-            return self;
+            try {
+                self *= (1 / factor);
+                return self;
+            } catch (Error const& error) {
+                throw error;
+            }
         }
-        constexpr Vector3D& operator/=(this Vector3D& self, Value const factor) noexcept
+
+        template <Arithmetic Converted>
+        [[nodiscard]] explicit constexpr operator Vector3D<Converted>(this Vector3D const& self) noexcept
         {
-            self.x /= factor;
-            self.y /= factor;
-            self.z /= factor;
-            return self;
+            return Vector3D<Converted>{static_cast<Converted>(self.x),
+                                       static_cast<Converted>(self.y),
+                                       static_cast<Converted>(self.z)};
         }
 
         [[nodiscard]] constexpr bool operator<=>(this Vector3D const& self, Vector3D const& other) noexcept = default;
@@ -101,42 +108,44 @@ namespace Linalg {
     };
 
     template <Arithmetic Value>
-    constexpr Vector3D<Value> operator+(Vector3D<Value> const& left, Vector3D<Value> const& right) noexcept
+    constexpr auto operator+(Vector3D<Value> const& left, Vector3D<Value> const& right) noexcept
     {
         return Vector3D<Value>{left.x + right.x, left.y + right.y, left.z + right.z};
     }
 
     template <Arithmetic Value>
-    constexpr Vector3D<Value> operator-(Vector3D<Value> const& left, Vector3D<Value> const& right) noexcept
+    constexpr auto operator-(Vector3D<Value> const& left, Vector3D<Value> const& right) noexcept
     {
         return Vector3D<Value>{left.x - right.x, left.y - right.y, left.z - right.z};
     }
 
     template <Arithmetic Value>
-    constexpr Vector3D<Value> operator*(Vector3D<Value> const& left, Vector3D<Value> const& right) noexcept
+    constexpr auto operator*(Value const factor, Vector3D<Value> const& vector) noexcept
     {
-        return Vector3D<Value>{left.x * right.x, left.y * right.y, left.z * right.z};
-    }
-    template <Arithmetic Value>
-    constexpr Vector3D<Value> operator*(Value const factor, Vector3D<Value> const& vector) noexcept
-    {
-        return Vector3D<Value>{vector.x * factor, vector.y * factor, vector.z * factor};
-    }
-    template <Arithmetic Value>
-    constexpr Vector3D<Value> operator*(Vector3D<Value> const& vector, Value const factor) noexcept
-    {
+        if (factor == std::numeric_limits<Value>::max()) {
+            throw Error{"Multiplication by inf\n"};
+        }
         return Vector3D<Value>{vector.x * factor, vector.y * factor, vector.z * factor};
     }
 
     template <Arithmetic Value>
-    constexpr Vector3D<Value> operator/(Vector3D<Value> const& left, Vector3D<Value> const& right) noexcept
+    constexpr auto operator*(Vector3D<Value> const& vector, Value const factor)
     {
-        return Vector3D<Value>{left.x / right.x, left.y / right.y, left.z / right.z};
+        try {
+            return factor * vector;
+        } catch (Error const& error) {
+            throw error;
+        }
     }
+
     template <Arithmetic Value>
-    constexpr Vector3D<Value> operator/(Vector3D<Value> const& vector, Value const factor) noexcept
+    constexpr auto operator/(Vector3D<Value> const& vector, Value const factor)
     {
-        return Vector3D<Value>{vector.x / factor, vector.y / factor, vector.z / factor};
+        try {
+            return vector * (1 / factor);
+        } catch (Error const& error) {
+            throw error;
+        }
     }
 
 }; // namespace Linalg

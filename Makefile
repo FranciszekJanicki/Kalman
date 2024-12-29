@@ -20,7 +20,6 @@ clean:
 cmake:
 	cd ${PROJECT_DIR} && make clean && mkdir ${BUILD_DIR} && cmake -S . -B ${BUILD_DIR}
 
-
 .PHONY: setup-eigen
 setup-eigen:
 	@if [ ! -d "${THIRD_PARTY_DIR}" ]; then \
@@ -43,8 +42,19 @@ clean-eigen:
 setup-external:
 	cd $(PROJECT_DIR) && touch .gitmodules && $(MAKE) setup-eigen
 
-
 .PHONY: clean-external
 clean-external: clean-eigen
 	git submodule deinit --all
 	rm -rf .gitmodules
+
+.PHONY: clang-format
+clang-format:
+	for ext in h c cpp hpp; do \
+		find $(SOURCE_DIR) -iname "*.$$ext" -print0 | xargs -0 -r clang-format -i; \
+	done
+
+.PHONY: all
+all:
+	make clang-format && make build && make run
+
+	

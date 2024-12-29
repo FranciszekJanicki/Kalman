@@ -3,7 +3,7 @@
 
 #include "arithmetic.hpp"
 
-namespace Regulator {
+namespace Regulators {
 
     template <Linalg::Arithmetic Value>
     struct Binary
@@ -50,6 +50,6 @@ namespace Regulator {
         State state{State::ZERO};
     };
 
-}; // namespace Regulator
+}; // namespace Regulators
 
 #endif // BINARY_HPP

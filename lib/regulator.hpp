@@ -14,7 +14,7 @@
 // i have chosen std::variant for polymorphic regulator, as its sigma container
 #define REGULATOR_VARIANT
 
-namespace Regulator {
+namespace Regulators {
 
     enum struct Algorithm {
         PID,

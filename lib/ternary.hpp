@@ -3,7 +3,7 @@
 
 #include "arithmetic.hpp"
 
-namespace Regulator {
+namespace Regulators {
 
     template <Linalg::Arithmetic Value>
     struct Ternary
@@ -54,6 +54,6 @@ namespace Regulator {
         State state{State::ZERO};
     };
 
-}; // namespace Regulator
+}; // namespace Regulators
 
 #endif // TERNARY_HPP

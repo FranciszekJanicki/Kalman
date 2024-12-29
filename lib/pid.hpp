@@ -3,7 +3,7 @@
 
 #include "arithmetic.hpp"
 
-namespace Regulator {
+namespace Regulators {
 
     template <Linalg::Arithmetic Value>
     struct PID
@@ -13,8 +13,8 @@ namespace Regulator {
     {
         Value operator()(this PID& self, const Value error, const Value dt) noexcept
         {
-            self.sum += (error + self.previous_error) / 2 * dt;
-            self.sum = std::clamp(self.sum, -self.windup, self.windup);
+            self.sum + (error + self.previous_error) / 2 * dt;
+            self.sum = std::clamp(self.sum, -self.windup / self.integral_gain, self.windup / self.integral_gain);
             return self.proportional_gain * error +
                    self.derivative_gain * (error - std::exchange(self.previous_error, error)) / dt +
                    self.integral_gain * self.sum;
@@ -29,6 +29,6 @@ namespace Regulator {
         Value previous_error{0};
     };
 
-}; // namespace Regulator
+}; // namespace Regulators
 
 #endif // PID_HPP

@@ -7,7 +7,7 @@
 #include <ranges>
 #include <vector>
 
-namespace Regulator {
+namespace Regulators {
 
     template <Linalg::Arithmetic Value>
     struct LQR
@@ -119,6 +119,6 @@ namespace Regulator {
         RicattiSolutions ricatti_solutions_{};
     };
 
-}; // namespace Regulator
+}; // namespace Regulators
 
 #endif // LQR_HPP

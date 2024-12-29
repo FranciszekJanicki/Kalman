@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace Filter {
+namespace Filters {
 
     template <Linalg::Arithmetic Value>
     struct ExtendedKalman {
@@ -192,6 +192,6 @@ namespace Filter {
         Matrix process_noise_{}; // states x states
     };
 
-}; // namespace Filter
+}; // namespace Filters
 
 #endif // EXTENDED_KALMAN_HPP
