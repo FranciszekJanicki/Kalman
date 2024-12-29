@@ -175,7 +175,7 @@ namespace Filters {
 
         Matrix process_noise_{}; // states x states
 
-        Matrix eye_{Matrix{state_.rows(), state_.rows()}};
+        Matrix eye_{Matrix::make_eye(state_.rows())};
     };
 
 }; // namespace Filters
