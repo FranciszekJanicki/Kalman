@@ -11,13 +11,13 @@ set(CMAKE_CXX_STANDARD 23)
 
 add_library(Lib STATIC
     "lib/kalman.hpp"
-    "lib/matrix.hpp"
+    "lib/heap_matrix.hpp"
     "lib/vector3d.hpp"
     "lib/vector6d.hpp"
     "lib/rotation3d.hpp"
     "lib/quaternion3d.hpp"
     "lib/dijkstra.hpp"
-    "lib/vector.hpp"
+    "lib/heap_vector.hpp"
     "lib/regulator.hpp"
     "lib/pid.hpp"
     "lib/lqr.hpp"

@@ -33,29 +33,24 @@ namespace Linalg {
                 return self.data[elem];
             }
 
-            [[nodiscard]] explicit constexpr operator Data(this Vector const& self) noexcept
-            {
-                return self.data;
-            }
-
             [[nodiscard]] constexpr Size size(this Vector const& self) noexcept
             {
                 return ELEMS;
             }
 
-            [[nodiscard]] constexpr Vector& operator+=(this Vector& self, Vector const& other) noexcept
+            [[nodiscard]] Vector& operator+=(this Vector& self, Vector const& other) noexcept
             {
                 self = sum(self, other);
                 return self;
             }
 
-            [[nodiscard]] constexpr Vector& operator-=(this Vector& self, Vector const& other) noexcept
+            [[nodiscard]] Vector& operator-=(this Vector& self, Vector const& other) noexcept
             {
                 self = difference(self, other);
                 return self;
             }
 
-            [[nodiscard]] constexpr Vector& operator*=(this Vector& self, Value const scale)
+            [[nodiscard]] Vector& operator*=(this Vector& self, Value const scale)
             {
                 try {
                     self = scale(self, scale);
@@ -65,7 +60,7 @@ namespace Linalg {
                 }
             }
 
-            [[nodiscard]] constexpr Vector& operator/=(this Vector& self, Value const scale) noexcept
+            [[nodiscard]] Vector& operator/=(this Vector& self, Value const scale) noexcept
             {
                 try {
                     self = scale(self, 1 / scale);
@@ -76,27 +71,28 @@ namespace Linalg {
             }
 
             Data data{};
-        }; // namespace Stack
+        };
 
         template <Arithmetic Value, Size ELEMS>
-        [[nodiscard]] Vector vector_sum(Vector const& left, Vector const& right) noexcept
+        [[nodiscard]] Vector<Value, ELEMS> vector_sum(Vector<Value, ELEMS> const& left,
+                                                      Vector<Value, ELEMS> const& right) noexcept
         {
-            Vector sum;
+            Vector<Value, ELEMS> result;
             for (Size i{}; i < ELEMS; ++i) {
-                sum[i] = left[i] + right[i];
+                result[i] = left[i] + right[i];
             }
-            return sum;
+            return result;
         }
 
         template <Arithmetic Value, Size ELEMS>
         [[nodiscard]] Vector<Value, ELEMS> vector_difference(Vector<Value, ELEMS> const& left,
                                                              Vector<Value, ELEMS> const& right) noexcept
         {
-            Vector difference;
+            Vector<Value, ELEMS> result;
             for (Size i{}; i < ELEMS; ++i) {
-                difference[i] = left[i] - right[i];
+                result[i] = left[i] - right[i];
             }
-            return difference;
+            return result;
         }
 
         template <Arithmetic Value, Size ELEMS>
@@ -106,29 +102,30 @@ namespace Linalg {
             if (scale == std::numeric_limits<Value>::max()) {
                 throw Error{"Multiplication by inf!\n"};
             }
-            Vector scale;
+
+            Vector<Value, ELEMS> result;
             for (Size i{}; i < ELEMS; ++i) {
-                scale[i] = vector[i] * scale;
+                result[i] = vector[i] * scale;
             }
-            return scale;
+            return result;
         }
 
         template <Arithmetic Value, Size ELEMS>
-        [[nodiscard]] constexpr Vector<Value, ELEMS> operator+(Vector<Value, ELEMS> const& left,
-                                                               Vector<Value, ELEMS> const& right) noexcept
+        [[nodiscard]] Vector<Value, ELEMS> operator+(Vector<Value, ELEMS> const& left,
+                                                     Vector<Value, ELEMS> const& right) noexcept
         {
             return vector_sum(left, right);
         }
 
         template <Arithmetic Value, Size ELEMS>
-        [[nodiscard]] constexpr Vector<Value, ELEMS> operator-(Vector<Value, ELEMS> const& left,
-                                                               Vector<Value, ELEMS> const& right) noexcept
+        [[nodiscard]] Vector<Value, ELEMS> operator-(Vector<Value, ELEMS> const& left,
+                                                     Vector<Value, ELEMS> const& right) noexcept
         {
             return vector_difference(left, right);
         }
 
         template <Arithmetic Value, Size ELEMS>
-        [[nodiscard]] constexpr Vector<Value, ELEMS> operator*(Value const scale, Vector<Value, ELEMS> const& vector)
+        [[nodiscard]] Vector<Value, ELEMS> operator*(Value const scale, Vector<Value, ELEMS> const& vector)
         {
             try {
                 return vector_scale(vector, scale);
@@ -138,7 +135,7 @@ namespace Linalg {
         }
 
         template <Arithmetic Value, Size ELEMS>
-        [[nodiscard]] constexpr Vector<Value, ELEMS> operator*(Vector<Value, ELEMS> const& vector, Value const scale)
+        [[nodiscard]] Vector<Value, ELEMS> operator*(Vector<Value, ELEMS> const& vector, Value const scale)
         {
             try {
                 return vector_scale(vector, scale);
@@ -148,7 +145,7 @@ namespace Linalg {
         }
 
         template <Arithmetic Value, Size ELEMS>
-        [[nodiscard]] constexpr Vector<Value, ELEMS> operator/(Vector<Value, ELEMS> const& vector, Value const scale)
+        [[nodiscard]] Vector<Value, ELEMS> operator/(Vector<Value, ELEMS> const& vector, Value const scale)
         {
             try {
                 return vector_scale(vector, 1 / scale);
@@ -158,6 +155,7 @@ namespace Linalg {
         }
 
     }; // namespace Stack
+
 }; // namespace Linalg
 
 #endif // STACK_VECTOR_HPP

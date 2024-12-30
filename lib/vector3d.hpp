@@ -67,7 +67,9 @@ namespace Linalg {
 
         constexpr Vector3D& operator-=(this Vector3D& self, Vector3D const& other) noexcept
         {
-            self += (-1 * other);
+            self.x -= other.x;
+            self.y -= other.y;
+            self.z -= other.z;
             return self;
         }
 
@@ -76,6 +78,7 @@ namespace Linalg {
             if (factor == std::numeric_limits<Value>::max()) {
                 throw Error{"Multiplication by inf\n"};
             }
+
             self.x *= factor;
             self.y *= factor;
             self.z *= factor;
@@ -84,12 +87,14 @@ namespace Linalg {
 
         constexpr Vector3D& operator/=(this Vector3D& self, Value const factor)
         {
-            try {
-                self *= (1 / factor);
-                return self;
-            } catch (Error const& error) {
-                throw error;
+            if (factor == 0) {
+                throw Error{"Disivion by 0\n"};
             }
+
+            self.x *= factor;
+            self.y *= factor;
+            self.z *= factor;
+            return self;
         }
 
         template <Arithmetic Converted>
@@ -120,11 +125,12 @@ namespace Linalg {
     }
 
     template <Arithmetic Value>
-    constexpr auto operator*(Value const factor, Vector3D<Value> const& vector) noexcept
+    constexpr auto operator*(Value const factor, Vector3D<Value> const& vector)
     {
         if (factor == std::numeric_limits<Value>::max()) {
             throw Error{"Multiplication by inf\n"};
         }
+
         return Vector3D<Value>{vector.x * factor, vector.y * factor, vector.z * factor};
     }
 
@@ -141,11 +147,11 @@ namespace Linalg {
     template <Arithmetic Value>
     constexpr auto operator/(Vector3D<Value> const& vector, Value const factor)
     {
-        try {
-            return vector * (1 / factor);
-        } catch (Error const& error) {
-            throw error;
+        if (factor == 0) {
+            throw Error{"Division by zero\n"};
         }
+
+        return Vector3D<Value>{vector.x / factor, vector.y / factor, vector.z / factor};
     }
 
 }; // namespace Linalg

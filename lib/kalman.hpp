@@ -2,7 +2,7 @@
 #define KALMAN_HPP
 
 #include "common.hpp"
-#include "matrix.hpp"
+#include "heap_matrix.hpp"
 #include <fmt/core.h>
 #include <stdexcept>
 #include <utility>
@@ -12,7 +12,7 @@ namespace Filters {
     template <Linalg::Arithmetic Value>
     struct Kalman {
     public:
-        using Matrix = Linalg::Matrix<Value>;
+        using Matrix = Linalg::Heap::Matrix<Value>;
 
         constexpr Kalman(Matrix&& initial_state,
                          Matrix&& state_transition,

@@ -55,12 +55,11 @@ namespace Linalg {
 
         constexpr Quaternion3D& operator-=(this Quaternion3D& self, Quaternion3D const& other)
         {
-            try {
-                self += (-1 * other);
-                return self;
-            } catch (Error const& error) {
-                throw error;
-            }
+            self.w -= other.w;
+            self.x -= other.x;
+            self.y -= other.y;
+            self.z -= other.z;
+            return self;
         }
 
         constexpr Quaternion3D& operator*=(this Quaternion3D& self, Quaternion3D const& other)
@@ -77,6 +76,7 @@ namespace Linalg {
             if (factor == std::numeric_limits<Value>::max()) {
                 throw Error{"Multiplication by inf\n"};
             }
+
             self.w *= factor;
             self.x *= factor;
             self.y *= factor;
@@ -86,12 +86,15 @@ namespace Linalg {
 
         constexpr Quaternion3D& operator/=(this Quaternion3D& self, Value const factor)
         {
-            try {
-                self *= (1 / factor);
-                return self;
-            } catch (Error const& error) {
-                throw error;
+            if (factor == 0) {
+                throw Error{"Division by zero\n"};
             }
+
+            self.w /= factor;
+            self.x /= factor;
+            self.y /= factor;
+            self.z /= factor;
+            return self;
         }
 
         template <Arithmetic Converted>
@@ -139,6 +142,7 @@ namespace Linalg {
         if (factor == std::numeric_limits<Value>::max()) {
             throw Error{"Multiplication by inf\n"};
         }
+
         return Quaternion3D<Value>{quaternion.w * factor,
                                    quaternion.x * factor,
                                    quaternion.y * factor,
@@ -158,11 +162,14 @@ namespace Linalg {
     template <Arithmetic Value>
     constexpr auto operator/(Quaternion3D<Value> const& quaternion, Value const factor)
     {
-        try {
-            return quaternion * (1 / factor);
-        } catch (Error const& error) {
-            throw error;
+        if (factor == std::numeric_limits<Value>::min()) {
+            throw Error{"Disivion by zero\n"};
         }
+
+        return Quaternion3D<Value>{quaternion.w / factor,
+                                   quaternion.x / factor,
+                                   quaternion.y / factor,
+                                   quaternion.z / factor};
     }
 
 }; // namespace Linalg
