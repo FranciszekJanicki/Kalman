@@ -94,7 +94,7 @@ namespace Filters {
                 self.predicted_state_ = (self.state_transition_ * self.state_) + (self.input_transition_ * input);
 
                 self.predicted_state_covariance_ =
-                    (self.state_transition_ * self.state_covariance_ * Matrix::transpose(self.state_transition_)) +
+                    (self.state_transition_ * self.state_covariance_ * matrix_transpose(self.state_transition_)) +
                     self.process_noise_;
             } catch (std::runtime_error const& error) {
                 throw error;
@@ -107,12 +107,12 @@ namespace Filters {
                 auto const innovation{measurement - (self.measurement_transition_ * self.predicted_state_)};
 
                 auto const residual_covariance{(self.measurement_transition_ * self.predicted_state_covariance_ *
-                                                Matrix::transpose(self.measurement_transition_)) +
+                                                matrix_transpose(self.measurement_transition_)) +
                                                self.measurement_covariance_};
 
                 auto const kalman_gain{self.predicted_state_covariance_ *
-                                       Matrix::transpose(self.measurement_transition_) *
-                                       Matrix::inverse(residual_covariance)};
+                                       matrix_transpose(self.measurement_transition_) *
+                                       matrix_inverse(residual_covariance)};
 
                 self.state_ = self.predicted_state_ + (kalman_gain * innovation);
 
@@ -126,36 +126,36 @@ namespace Filters {
         void initialize(this Kalman& self)
         {
             auto const states{self.state_transition_.rows()};
-            auto const inputs{self.input_transition_.columns()};
+            auto const inputs{self.input_transition_.cols()};
             auto const measurements{self.measurement_transition_.rows()};
             if (self.state_.rows() != states) {
                 throw std::runtime_error{"Wrong state rows!\n"};
-            } else if (self.state_.columns() != 1) {
-                throw std::runtime_error{"Wrong state columns!\n"};
+            } else if (self.state_.cols() != 1) {
+                throw std::runtime_error{"Wrong state cols!\n"};
             } else if (self.state_transition_.rows() != states) {
                 throw std::runtime_error{"Wrong state_transition rows!\n"};
-            } else if (self.state_transition_.columns() != states) {
-                throw std::runtime_error{"Wrong state_transition columns!\n"};
+            } else if (self.state_transition_.cols() != states) {
+                throw std::runtime_error{"Wrong state_transition cols!\n"};
             } else if (self.input_transition_.rows() != states) {
                 throw std::runtime_error{"Wrong input_transition rows!\n"};
-            } else if (self.input_transition_.columns() != inputs) {
-                throw std::runtime_error{"Wrong input_transition columns!\n"};
+            } else if (self.input_transition_.cols() != inputs) {
+                throw std::runtime_error{"Wrong input_transition cols!\n"};
             } else if (self.state_covariance_.rows() != states) {
                 throw std::runtime_error{"Wrong state_covariance rows!\n"};
-            } else if (self.state_covariance_.columns() != states) {
-                throw std::runtime_error{"Wrong state_covariance columns!\n"};
+            } else if (self.state_covariance_.cols() != states) {
+                throw std::runtime_error{"Wrong state_covariance cols!\n"};
             } else if (self.input_covariance_.rows() != inputs) {
                 throw std::runtime_error{"Wrong input_covariance rows!\n"};
-            } else if (self.input_covariance_.columns() != inputs) {
-                throw std::runtime_error{"Wrong input_covariance columns!\n"};
+            } else if (self.input_covariance_.cols() != inputs) {
+                throw std::runtime_error{"Wrong input_covariance cols!\n"};
             } else if (self.measurement_transition_.rows() != measurements) {
                 throw std::runtime_error{"Wrong measurement_transition rows!\n"};
-            } else if (self.measurement_transition_.columns() != states) {
-                throw std::runtime_error{"Wrong measurement_transition columns!\n"};
+            } else if (self.measurement_transition_.cols() != states) {
+                throw std::runtime_error{"Wrong measurement_transition cols!\n"};
             } else if (self.measurement_covariance_.rows() != measurements) {
                 throw std::runtime_error{"Wrong measurement_covariance rows!\n"};
-            } else if (self.measurement_covariance_.columns() != measurements) {
-                throw std::runtime_error{"Wrong measurement_covariance columns!\n"};
+            } else if (self.measurement_covariance_.cols() != measurements) {
+                throw std::runtime_error{"Wrong measurement_covariance cols!\n"};
             } else {
                 fmt::println("Correct dimensions, nice");
             }
@@ -175,7 +175,7 @@ namespace Filters {
 
         Matrix process_noise_{}; // states x states
 
-        Matrix eye_{Matrix::make_eye(state_.rows())};
+        Matrix eye_{Matrix::eye(state_.rows())};
     };
 
 }; // namespace Filters
