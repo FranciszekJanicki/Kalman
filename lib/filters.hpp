@@ -1,7 +1,7 @@
 #ifndef FILTERS_HPP
 #define FILTERS_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include <functional>
 #include <queue>
 #include <utility>

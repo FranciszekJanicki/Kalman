@@ -1,7 +1,7 @@
 #ifndef EXTENDED_KALMAN_HPP
 #define EXTENDED_KALMAN_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include "matrix.hpp"
 #include <fmt/core.h>
 #include <stdexcept>

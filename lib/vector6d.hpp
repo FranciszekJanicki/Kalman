@@ -1,7 +1,7 @@
 #ifndef VECTOR6D_HPP
 #define VECTOR6D_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include "quaternion3d.hpp"
 #include "vector3d.hpp"
 #include <cmath>

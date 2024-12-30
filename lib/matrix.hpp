@@ -1,7 +1,7 @@
 #ifndef MATRIX_HPP
 #define MATRIX_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include <cassert>
 #include <cmath>
 #include <compare>
@@ -23,7 +23,6 @@ namespace Linalg {
         using MatrixData = std::vector<std::vector<Value>>;
         using VectorInitializer = std::initializer_list<Value>;
         using MatrixInitializer = std::initializer_list<std::initializer_list<Value>>;
-        using Error = std::runtime_error;
 
         [[nodiscard]] static constexpr Matrix make_matrix(MatrixInitializer const data)
         {

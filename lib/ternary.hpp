@@ -1,7 +1,7 @@
 #ifndef TERNARY_HPP
 #define TERNARY_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 
 namespace Regulators {
 

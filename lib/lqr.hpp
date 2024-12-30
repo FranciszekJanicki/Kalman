@@ -1,7 +1,7 @@
 #ifndef LQR_HPP
 #define LQR_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include "matrix.hpp"
 #include <algorithm>
 #include <ranges>

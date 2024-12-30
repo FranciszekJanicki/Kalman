@@ -1,7 +1,7 @@
 #ifndef ADRC_HPP
 #define ADRC_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 
 namespace Regulators {
 

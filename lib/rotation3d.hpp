@@ -1,7 +1,7 @@
 #ifndef ROTATION3D_HPP
 #define ROTATION3D_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include "vector3d.hpp"
 #include <array>
 #include <cmath>

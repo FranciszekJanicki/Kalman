@@ -1,7 +1,7 @@
 #ifndef VECTOR3D_HPP
 #define VECTOR3D_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include <cmath>
 #include <compare>
 #include <exception>

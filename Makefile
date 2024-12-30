@@ -53,6 +53,13 @@ clang-format:
 		find $(SOURCE_DIR) -iname "*.$$ext" -print0 | xargs -0 -r clang-format -i; \
 	done
 
+.PHONY: clang-tidy
+clang-tidy:
+	for ext in h c cpp hpp; do \
+		find $(SOURCE_DIR) -iname "*.$$ext" -print0 | xargs -0 clang-tidy --fix --fix-errors --config-file=.clang-tidy; \
+	done
+
+
 .PHONY: all
 all:
 	make clang-format && make build && make run

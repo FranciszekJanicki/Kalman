@@ -1,7 +1,7 @@
 #ifndef QUATERNION3D_HPP
 #define QUATERNION3D_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include <cmath>
 #include <compare>
 #include <cstdlib>

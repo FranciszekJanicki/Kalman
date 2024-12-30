@@ -1,7 +1,7 @@
 #ifndef VECTOR_HPP
 #define VECTOR_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 #include <cassert>
 #include <cmath>
 #include <compare>

@@ -1,7 +1,7 @@
 #ifndef PID_HPP
 #define PID_HPP
 
-#include "arithmetic.hpp"
+#include "common.hpp"
 
 namespace Regulators {
 

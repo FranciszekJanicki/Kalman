@@ -24,6 +24,8 @@ add_library(Lib STATIC
     "lib/adrc.hpp"
     "lib/binary.hpp"
     "lib/ternary.hpp"
+    "lib/stack_vector.hpp"
+    "lib/stack_matrix.hpp"
 )
 
 set_target_properties(Lib PROPERTIES LINKER_LANGUAGE CXX)
