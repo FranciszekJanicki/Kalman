@@ -31,15 +31,15 @@ namespace Linalg {
 
         constexpr Rotation3D& operator*=(this Rotation3D& self, Rotation3D const& other) noexcept
         {
-            self.x = Vector3D<Value>{self.x.x * other.x.x + self.x.y * other.y.x + self.x.z * other.z.x,
-                                     self.x.x * other.x.y + self.x.y * other.y.y + self.x.z * other.z.y,
-                                     self.x.x * other.x.z + self.x.y * other.y.z + self.x.z * other.z.z};
-            self.y = Vector3D<Value>{self.y.x * other.x.x + self.y.y * other.y.x + self.y.z * other.z.x,
-                                     self.y.x * other.x.y + self.y.y * other.y.y + self.y.z * other.z.y,
-                                     self.y.x * other.x.z + self.y.y * other.y.z + self.y.z * other.z.z};
-            self.z = Vector3D<Value>{self.z.x * other.x.x + self.z.y * other.y.x + self.z.z * other.z.x,
-                                     self.z.x * other.x.y + self.z.y * other.y.y + self.z.z * other.z.y,
-                                     self.z.x * other.x.z + self.z.y * other.y.z + self.z.z * other.z.z};
+            self.x = Vector3D<Value>{self.x * other.x + self.y * other.x + self.z * other.x,
+                                     self.x * other.y + self.y * other.y + self.z * other.y,
+                                     self.x * other.z + self.y * other.z + self.z * other.z};
+            self.y = Vector3D<Value>{self.x * other.x + self.y * other.x + self.z * other.x,
+                                     self.x * other.y + self.y * other.y + self.z * other.y,
+                                     self.x * other.z + self.y * other.z + self.z * other.z};
+            self.z = Vector3D<Value>{self.x * other.x + self.y * other.x + self.z * other.x,
+                                     self.x * other.y + self.y * other.y + self.z * other.y,
+                                     self.x * other.z + self.y * other.z + self.z * other.z};
             return self;
         }
 

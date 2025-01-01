@@ -16,6 +16,7 @@ namespace Linalg {
         template <Arithmetic Value, Size ROWS, Size COLS>
         struct Matrix {
             using Data = std::array<std::array<Value, COLS>, ROWS>;
+            using Init = std::initializer_list<std::initializer_list<Value>>;
             using Row = std::array<Value, COLS>;
             using Column = std::array<Value, ROWS>;
 
