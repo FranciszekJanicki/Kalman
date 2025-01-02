@@ -1,5 +1,5 @@
-#ifndef KALMAN_HPP
-#define KALMAN_HPP
+#ifndef HEAP_KALMAN_HPP
+#define HEAP_KALMAN_HPP
 
 #include "common.hpp"
 #include "heap_matrix.hpp"
@@ -7,12 +7,12 @@
 #include <stdexcept>
 #include <utility>
 
-namespace Filters {
+namespace Linalg::Heap {
 
     template <Linalg::Arithmetic Value>
     struct Kalman {
     public:
-        using Matrix = Linalg::Heap::Matrix<Value>;
+        using Matrix = Matrix<Value>;
 
         constexpr Kalman(Matrix&& initial_state,
                          Matrix&& state_transition,
@@ -30,9 +30,7 @@ namespace Filters {
             measurement_transition_{std::forward<Matrix>(measurement_transition)},
             measurement_covariance_{std::forward<Matrix>(measurement_covariance)},
             process_noise_{std::forward<Matrix>(process_noise)}
-        {
-            initialize();
-        }
+        {}
 
         constexpr Kalman(Matrix const& initial_state,
                          Matrix const& state_transition,
@@ -50,41 +48,17 @@ namespace Filters {
             measurement_transition_{measurement_transition},
             measurement_covariance_{measurement_covariance},
             process_noise_{process_noise}
-        {
-            initialize();
-        }
+        {}
 
         [[nodiscard]] constexpr Matrix operator()(this Kalman& self, Matrix const& input, Matrix const& measurement)
         {
             try {
                 self.predict(input);
-                self.print_predicted();
                 self.correct(measurement);
-                self.print();
                 return self.state_;
             } catch (std::runtime_error const& error) {
                 throw error;
             }
-        }
-
-        constexpr void print(this Kalman const& self) noexcept
-        {
-            fmt::print("state covariance: ");
-            self.state_covariance_.print();
-
-            fmt::print("state: ");
-            self.state_.print();
-            fmt::println("");
-        }
-
-        constexpr void print_predicted(this Kalman const& self) noexcept
-        {
-            fmt::print("predicted state: ");
-            self.predicted_state_.print();
-
-            fmt::print("predicted state covariance: ");
-            self.predicted_state_covariance_.print();
-            fmt::println("");
         }
 
     private:
@@ -116,14 +90,14 @@ namespace Filters {
 
                 self.state_ = self.predicted_state_ + (kalman_gain * innovation);
 
-                self.state_covariance_ =
-                    (self.eye_ - kalman_gain * self.measurement_transition_) * self.predicted_state_covariance_;
+                self.state_covariance_ = (make_eye<Value, STATES>() - kalman_gain * self.measurement_transition_) *
+                                         self.predicted_state_covariance_;
             } catch (std::runtime_error const& error) {
                 throw error;
             }
         }
 
-        void initialize(this Kalman& self)
+        void initialize(this Kalman const& self)
         {
             auto const states{self.state_transition_.rows()};
             auto const inputs{self.input_transition_.cols()};
@@ -161,23 +135,21 @@ namespace Filters {
             }
         }
 
-        Matrix state_{}; // states x 1
+        Matrix state_{};
         Matrix predicted_state_{};
-        Matrix state_transition_{}; // states x inputs
-        Matrix state_covariance_{}; // states x states
+        Matrix state_transition_{};
+        Matrix state_covariance_{};
         Matrix predicted_state_covariance_{};
 
-        Matrix input_transition_{}; // states x inputs
-        Matrix input_covariance_{}; //  inputs x inputs
+        Matrix input_transition_{};
+        Matrix input_covariance_{};
 
-        Matrix measurement_transition_{}; // measurements x states
-        Matrix measurement_covariance_{}; // measurements x measurements
+        Matrix measurement_transition_{};
+        Matrix measurement_covariance_{};
 
-        Matrix process_noise_{}; // states x states
-
-        Matrix eye_{Matrix::eye(state_.rows())};
+        Matrix process_noise_{};
     };
 
-}; // namespace Filters
+}; // namespace Linalg::Heap
 
-#endif // KALMAN_HPP
+#endif // HEAP_KALMAN_HPP

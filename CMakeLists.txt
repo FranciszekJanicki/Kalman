@@ -10,10 +10,10 @@ set(CMAKE_CXX_COMPILER "/usr/bin/g++")
 set(CMAKE_CXX_STANDARD 23)
 
 add_library(Lib STATIC
-    "lib/kalman.hpp"
+    "lib/stack_kalman.hpp"
+    "lib/heap_kalman.hpp"
     "lib/heap_matrix.hpp"
     "lib/vector3d.hpp"
-    "lib/vector6d.hpp"
     "lib/rotation3d.hpp"
     "lib/quaternion3d.hpp"
     "lib/dijkstra.hpp"
