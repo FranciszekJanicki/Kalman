@@ -70,6 +70,18 @@ namespace Linalg {
                 }
             }
 
+            constexpr void print(this Vector const& self) noexcept
+            {
+                fmt::print("[");
+                for (auto& elem : self.data) {
+                    fmt::print("{}", elem);
+                    if (elem != self.data.back()) {
+                        fmt::print(", ");
+                    }
+                }
+                fmt::print("]\n");
+            }
+
             Data data{};
         };
 

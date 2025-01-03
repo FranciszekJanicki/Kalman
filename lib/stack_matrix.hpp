@@ -76,6 +76,11 @@ namespace Linalg::Stack {
 
         [[nodiscard]] constexpr bool operator<=>(this Matrix const& self, Matrix const& other) noexcept = default;
 
+        constexpr void operator=(this Matrix& self, Init const init)
+        {
+            self.data = make_data(init);
+        }
+
         constexpr void print(this Matrix const& self) noexcept
         {
             fmt::print("[");

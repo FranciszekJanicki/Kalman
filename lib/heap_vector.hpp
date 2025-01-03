@@ -68,13 +68,13 @@ namespace Linalg {
 
             constexpr Vector() noexcept = default;
 
-            constexpr Vector(Data&& data) : data_{std::forward<Data>(data)}
+            constexpr Vector(Data&& data) : data{std::forward<Data>(data)}
             {}
 
-            constexpr Vector(Init const init) : data_{init}
+            constexpr Vector(Init const init) : data{init}
             {}
 
-            constexpr Vector(Size const elems) : data_{make_data(elems)}
+            constexpr Vector(Size const elems) : data{make_data(elems)}
             {}
 
             constexpr Vector(Vector const& other) = default;
@@ -87,9 +87,9 @@ namespace Linalg {
 
             constexpr Vector& operator=(Vector&& other) noexcept = default;
 
-            constexpr void operator=(this Vector& self, Init const data)
+            constexpr void operator=(this Vector& self, Init const init)
             {
-                self.data_ = data;
+                self.data = data;
             }
 
             constexpr Vector& operator+=(this Vector& self, Vector const& other)
@@ -137,7 +137,7 @@ namespace Linalg {
                 if (elem > self.elems()) {
                     throw Error{"Wrong dimensions\n"};
                 }
-                return self.data_[elem];
+                return self.data[elem];
             }
 
             [[nodiscard]] constexpr Value const& operator[](this Vector const& self, Size const elem) noexcept
@@ -145,7 +145,7 @@ namespace Linalg {
                 if (elem > self.elems()) {
                     throw Error{"Wrong dimensions\n"};
                 }
-                return self.data_[elem];
+                return self.data[elem];
             }
 
             [[nodiscard]] constexpr bool operator<=>(this Vector const& self, Vector const& other) noexcept = default;
@@ -153,9 +153,9 @@ namespace Linalg {
             constexpr void print(this Vector const& self) noexcept
             {
                 fmt::print("[");
-                for (auto& elem : self.data_) {
+                for (auto& elem : self.data) {
                     fmt::print("{}", elem);
-                    if (elem != self.data_.back()) {
+                    if (elem != self.data.back()) {
                         fmt::print(", ");
                     }
                 }
@@ -164,10 +164,10 @@ namespace Linalg {
 
             [[nodiscard]] constexpr Size elems(this Vector const& self) noexcept
             {
-                return self.data_.size();
+                return self.data.size();
             }
 
-            Data data_{};
+            Data data{};
         };
 
         template <typename Value>

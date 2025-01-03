@@ -121,13 +121,13 @@ namespace Linalg {
 
             constexpr Matrix() noexcept = default;
 
-            constexpr Matrix(Init const init) : data_{make_data(init)}
+            constexpr Matrix(Init const init) : data{make_data(init)}
             {}
 
-            constexpr Matrix(Data&& data) : data_{std::forward<Data>(data)}
+            constexpr Matrix(Data&& data) : data{std::forward<Data>(data)}
             {}
 
-            constexpr Matrix(Size const rows, Size const cols) : data_{make_data(rows, cols)}
+            constexpr Matrix(Size const rows, Size const cols) : data{make_data(rows, cols)}
             {}
 
             constexpr Matrix(Matrix const& other) = default;
@@ -142,7 +142,7 @@ namespace Linalg {
 
             constexpr void operator=(this Matrix& self, Init const init) noexcept
             {
-                self.data_ = make_data(init);
+                self.data = make_data(init);
             }
 
             constexpr Matrix& operator+=(this Matrix& self, Matrix const& other)
@@ -220,7 +220,7 @@ namespace Linalg {
                 if (row >= self.rows()) {
                     throw Error{"Wrong dimensions\n"};
                 }
-                return self.data_[row];
+                return self.data[row];
             }
 
             [[nodiscard]] constexpr Vector& operator[](this Matrix& self, Size const row)
@@ -228,7 +228,7 @@ namespace Linalg {
                 if (row >= self.rows()) {
                     throw Error{"Wrong dimensions\n"};
                 }
-                return self.data_[row];
+                return self.data[row];
             }
 
             [[nodiscard]] constexpr Value& operator[](this Matrix& self, Size const row, Size const column)
@@ -236,7 +236,7 @@ namespace Linalg {
                 if (row >= self.rows() || column >= self.cols()) {
                     throw Error{"Wrong dimensions\n"};
                 }
-                return self.data_[row][column];
+                return self.data[row][column];
             }
 
             [[nodiscard]] constexpr Value const& operator[](this Matrix const& self, Size const row, Size const column)
@@ -244,7 +244,7 @@ namespace Linalg {
                 if (row >= self.rows() || column >= self.cols()) {
                     throw Error{"Wrong dimensions\n"};
                 }
-                return self.data_[row][column];
+                return self.data[row][column];
             }
 
             [[nodiscard]] constexpr bool operator<=>(this Matrix const& self, Matrix const& other) noexcept = default;
@@ -252,8 +252,8 @@ namespace Linalg {
             constexpr void print(this Matrix const& self) noexcept
             {
                 fmt::print("[");
-                if (!self.data_.empty()) {
-                    for (auto& row : self.data_) {
+                if (!self.data.empty()) {
+                    for (auto& row : self.data) {
                         fmt::print("[");
                         if (!row.empty()) {
                             for (auto& col : row) {
@@ -264,7 +264,7 @@ namespace Linalg {
                             }
                         }
                         fmt::print("]");
-                        if (row != self.data_.back()) {
+                        if (row != self.data.back()) {
                             fmt::print(",\n");
                         }
                     }
@@ -279,12 +279,12 @@ namespace Linalg {
 
             [[nodiscard]] constexpr Size rows(this Matrix const& self) noexcept
             {
-                return self.data_.size();
+                return self.data.size();
             }
 
             [[nodiscard]] constexpr Size cols(this Matrix const& self) noexcept
             {
-                return self.data_.front().size();
+                return self.data.front().size();
             }
 
             constexpr void transpose(this Matrix& self)
@@ -306,7 +306,7 @@ namespace Linalg {
             }
 
         private:
-            Data data_{};
+            Data data{};
         };
 
         template <typename Value>

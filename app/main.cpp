@@ -19,7 +19,7 @@ int main([[maybe_unused]] int const argc, [[maybe_unused]] char const* argv[])
     auto const sigma_perc{1.0};
     auto const sigma_move{1.0};
 
-    Kalman kalman{Matrix2x1{{1.0}, {10.0}},
+    Kalman kalman{Matrix2x1{{1.0}, {0.0}},
                   Matrix2x2{{1.0, dt}, {0.0, 1.0}},
                   Matrix2x2{{1.0, 0.0}, {0.0, 10.0}},
                   Matrix2x1{{1.0}, {1.0}},
@@ -32,9 +32,10 @@ int main([[maybe_unused]] int const argc, [[maybe_unused]] char const* argv[])
     auto i{0};
     while (i++ < 100) {
         try {
-            std::invoke(kalman, Matrix1x1{{0.0}}, Matrix1x1{{0.0}});
+            auto const kalman_state = std::invoke(kalman, Matrix1x1{{0.0}}, Matrix1x1{{0.0}});
+            kalman_state.print();
         } catch (std::runtime_error const& error) {
-            fmt::print("{}", error.what());
+            fmt::print("error: {}", error.what());
         }
     }
 
