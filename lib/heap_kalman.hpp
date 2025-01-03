@@ -14,14 +14,14 @@ namespace Linalg::Heap {
     public:
         using Matrix = Matrix<Value>;
 
-        constexpr Kalman(Matrix&& initial_state,
-                         Matrix&& state_transition,
-                         Matrix&& state_covariance,
-                         Matrix&& input_transition,
-                         Matrix&& input_covariance,
-                         Matrix&& measurement_transition,
-                         Matrix&& measurement_covariance,
-                         Matrix&& process_noise) :
+        Kalman(Matrix&& initial_state,
+               Matrix&& state_transition,
+               Matrix&& state_covariance,
+               Matrix&& input_transition,
+               Matrix&& input_covariance,
+               Matrix&& measurement_transition,
+               Matrix&& measurement_covariance,
+               Matrix&& process_noise) :
             state_{std::forward<Matrix>(initial_state)},
             state_transition_{std::forward<Matrix>(state_transition)},
             state_covariance_{std::forward<Matrix>(state_covariance)},
@@ -32,14 +32,14 @@ namespace Linalg::Heap {
             process_noise_{std::forward<Matrix>(process_noise)}
         {}
 
-        constexpr Kalman(Matrix const& initial_state,
-                         Matrix const& state_transition,
-                         Matrix const& state_covariance,
-                         Matrix const& input_transition,
-                         Matrix const& input_covariance,
-                         Matrix const& measurement_transition,
-                         Matrix const& measurement_covariance,
-                         Matrix const& process_noise) :
+        Kalman(Matrix const& initial_state,
+               Matrix const& state_transition,
+               Matrix const& state_covariance,
+               Matrix const& input_transition,
+               Matrix const& input_covariance,
+               Matrix const& measurement_transition,
+               Matrix const& measurement_covariance,
+               Matrix const& process_noise) :
             state_{initial_state},
             state_transition_{state_transition},
             state_covariance_{state_covariance},
@@ -50,7 +50,7 @@ namespace Linalg::Heap {
             process_noise_{process_noise}
         {}
 
-        [[nodiscard]] constexpr Matrix operator()(this Kalman& self, Matrix const& input, Matrix const& measurement)
+        [[nodiscard]] Matrix operator()(this Kalman& self, Matrix const& input, Matrix const& measurement)
         {
             try {
                 self.predict(input);
@@ -62,12 +62,12 @@ namespace Linalg::Heap {
         }
 
     private:
-        constexpr void predict(this Kalman& self, Matrix const& input)
+        void predict(this Kalman& self, Matrix const& input)
         {
             try {
-                self.predicted_state_ = (self.state_transition_ * self.state_) + (self.input_transition_ * input);
+                self.state_ = (self.state_transition_ * self.state_) + (self.input_transition_ * input);
 
-                self.predicted_state_covariance_ =
+                self.state_covariance_ =
                     (self.state_transition_ * self.state_covariance_ * matrix_transpose(self.state_transition_)) +
                     self.process_noise_;
             } catch (std::runtime_error const& error) {
@@ -75,23 +75,22 @@ namespace Linalg::Heap {
             }
         }
 
-        constexpr void correct(this Kalman& self, Matrix const& measurement)
+        void correct(this Kalman& self, Matrix const& measurement)
         {
             try {
-                auto const innovation{measurement - (self.measurement_transition_ * self.predicted_state_)};
+                auto const innovation{measurement - (self.measurement_transition_ * self.state_)};
 
-                auto const residual_covariance{(self.measurement_transition_ * self.predicted_state_covariance_ *
+                auto const residual_covariance{(self.measurement_transition_ * self.state_covariance_ *
                                                 matrix_transpose(self.measurement_transition_)) +
                                                self.measurement_covariance_};
 
-                auto const kalman_gain{self.predicted_state_covariance_ *
-                                       matrix_transpose(self.measurement_transition_) *
+                auto const kalman_gain{self.state_covariance_ * matrix_transpose(self.measurement_transition_) *
                                        matrix_inverse(residual_covariance)};
 
-                self.state_ = self.predicted_state_ + (kalman_gain * innovation);
+                self.state_ = self.state_ + (kalman_gain * innovation);
 
-                self.state_covariance_ = (make_eye<Value, STATES>() - kalman_gain * self.measurement_transition_) *
-                                         self.predicted_state_covariance_;
+                self.state_covariance_ =
+                    (make_eye<Value, STATES>() - kalman_gain * self.measurement_transition_) * self.state_covariance_;
             } catch (std::runtime_error const& error) {
                 throw error;
             }
@@ -136,10 +135,9 @@ namespace Linalg::Heap {
         }
 
         Matrix state_{};
-        Matrix predicted_state_{};
+
         Matrix state_transition_{};
         Matrix state_covariance_{};
-        Matrix predicted_state_covariance_{};
 
         Matrix input_transition_{};
         Matrix input_covariance_{};

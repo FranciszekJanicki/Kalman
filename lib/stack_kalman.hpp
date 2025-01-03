@@ -15,14 +15,14 @@ namespace Linalg::Stack {
         template <Size ROWS, Size COLS>
         using Matrix = Matrix<Value, ROWS, COLS>;
 
-        constexpr Kalman(Matrix<STATES, 1> const& initial_state,
-                         Matrix<STATES, STATES> const& state_transition,
-                         Matrix<STATES, STATES> const& state_covariance,
-                         Matrix<STATES, INPUTS> const& input_transition,
-                         Matrix<INPUTS, INPUTS> const& input_covariance,
-                         Matrix<MEASUREMENTS, STATES> const& measurement_transition,
-                         Matrix<MEASUREMENTS, MEASUREMENTS> const& measurement_covariance,
-                         Matrix<STATES, STATES> const& process_noise) :
+        Kalman(Matrix<STATES, 1> const& initial_state,
+               Matrix<STATES, STATES> const& state_transition,
+               Matrix<STATES, STATES> const& state_covariance,
+               Matrix<STATES, INPUTS> const& input_transition,
+               Matrix<INPUTS, INPUTS> const& input_covariance,
+               Matrix<MEASUREMENTS, STATES> const& measurement_transition,
+               Matrix<MEASUREMENTS, MEASUREMENTS> const& measurement_covariance,
+               Matrix<STATES, STATES> const& process_noise) :
             state_{initial_state},
             state_transition_{state_transition},
             state_covariance_{state_covariance},
@@ -33,14 +33,12 @@ namespace Linalg::Stack {
             process_noise_{process_noise}
         {}
 
-        [[nodiscard]] constexpr Matrix<STATES, 1>
+        [[nodiscard]] Matrix<STATES, 1>
         operator()(this Kalman& self, Matrix<1, INPUTS> const& input, Matrix<1, MEASUREMENTS> const& measurement)
         {
             try {
                 self.predict(input);
-                self.predicted_state_.print();
                 self.correct(measurement);
-                self.state_.print();
                 return self.state_;
             } catch (std::runtime_error const& error) {
                 throw error;
@@ -48,12 +46,12 @@ namespace Linalg::Stack {
         }
 
     private:
-        constexpr void predict(this Kalman& self, Matrix<1, INPUTS> const& input)
+        void predict(this Kalman& self, Matrix<1, INPUTS> const& input)
         {
             try {
-                self.predicted_state_ = (self.state_transition_ * self.state_) + (self.input_transition_ * input);
+                self.state_ = (self.state_transition_ * self.state_) + (self.input_transition_ * input);
 
-                self.predicted_state_covariance_ =
+                self.state_covariance_ =
                     (self.state_transition_ * self.state_covariance_ * matrix_transpose(self.state_transition_)) +
                     self.process_noise_;
             } catch (std::runtime_error const& error) {
@@ -61,33 +59,31 @@ namespace Linalg::Stack {
             }
         }
 
-        constexpr void correct(this Kalman& self, Matrix<1, MEASUREMENTS> const& measurement)
+        void correct(this Kalman& self, Matrix<1, MEASUREMENTS> const& measurement)
         {
             try {
-                auto const innovation{measurement - (self.measurement_transition_ * self.predicted_state_)};
+                auto const innovation{measurement - (self.measurement_transition_ * self.state_)};
 
-                auto const residual_covariance{(self.measurement_transition_ * self.predicted_state_covariance_ *
+                auto const residual_covariance{(self.measurement_transition_ * self.state_covariance_ *
                                                 matrix_transpose(self.measurement_transition_)) +
                                                self.measurement_covariance_};
 
-                auto const kalman_gain{self.predicted_state_covariance_ *
-                                       matrix_transpose(self.measurement_transition_) *
+                auto const kalman_gain{self.state_covariance_ * matrix_transpose(self.measurement_transition_) *
                                        matrix_inverse(residual_covariance)};
 
-                self.state_ = self.predicted_state_ + (kalman_gain * innovation);
+                self.state_ = self.state_ + (kalman_gain * innovation);
 
-                self.state_covariance_ = (make_eye<Value, STATES>() - kalman_gain * self.measurement_transition_) *
-                                         self.predicted_state_covariance_;
+                self.state_covariance_ =
+                    (make_eye<Value, STATES>() - kalman_gain * self.measurement_transition_) * self.state_covariance_;
             } catch (std::runtime_error const& error) {
                 throw error;
             }
         }
 
         Matrix<STATES, 1UL> state_{};
-        Matrix<STATES, 1UL> predicted_state_{};
+
         Matrix<STATES, STATES> state_transition_{};
         Matrix<STATES, STATES> state_covariance_{};
-        Matrix<STATES, STATES> predicted_state_covariance_{};
 
         Matrix<STATES, INPUTS> input_transition_{};
         Matrix<INPUTS, INPUTS> input_covariance_{};
